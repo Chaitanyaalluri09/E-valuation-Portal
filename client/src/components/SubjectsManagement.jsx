@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Toast from './Toast';
 
 function SubjectsManagement() {
   const [subjects, setSubjects] = useState([]);
@@ -24,6 +25,7 @@ function SubjectsManagement() {
   const [successMessage, setSuccessMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [subjectsPerPage] = useState(5);
+  const [csvFile, setCsvFile] = useState(null);
 
   // Remove or comment out these arrays since we won't use them for regulation and branches
  // const regulations = ['R23', 'R20', 'R19','R24'];  // Can be removed if not used elsewhere
@@ -54,19 +56,17 @@ function SubjectsManagement() {
     }));
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Create an object with only non-empty filter values
       const activeFilters = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => value !== '')
       );
       
-      // Convert the filters object to URL parameters
       const queryParams = new URLSearchParams(activeFilters).toString();
-      console.log('Fetching with filters:', queryParams); // Debug log
+      console.log('Fetching with filters:', queryParams);
       
       const response = await fetch(`/api/subjects?${queryParams}`);
       
@@ -75,7 +75,7 @@ function SubjectsManagement() {
       }
       
       const data = await response.json();
-      console.log('Received subjects:', data); // Debug log
+      console.log('Received subjects:', data);
       
       if (Array.isArray(data)) {
         setSubjects(data);
@@ -90,9 +90,9 @@ function SubjectsManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  const fetchDistinctValues = async () => {
+  const fetchDistinctValues = useCallback(async () => {
     try {
       console.log('Fetching distinct values...');
       const [regulationsRes, branchesRes] = await Promise.all([
@@ -115,7 +115,7 @@ function SubjectsManagement() {
     } catch (error) {
       console.error('Error fetching distinct values:', error);
     }
-  };
+  }, []);
 
   const handleAddSubject = async (e) => {
     e.preventDefault();
@@ -149,8 +149,8 @@ function SubjectsManagement() {
       // Show success message
       setSuccessMessage('Subject added successfully');
 
-      // Refresh the subjects list
-      fetchSubjects();
+      // Refresh both subjects list and distinct values
+      await Promise.all([fetchSubjects(), fetchDistinctValues()]);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -177,8 +177,8 @@ function SubjectsManagement() {
       // Show success message
       setSuccessMessage('Subject deleted successfully');
 
-      // Refresh the subjects list
-      fetchSubjects();
+      // Refresh both subjects list and distinct values
+      await Promise.all([fetchSubjects(), fetchDistinctValues()]);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -190,14 +190,99 @@ function SubjectsManagement() {
     }
   };
 
-  useEffect(() => {
-    fetchSubjects();
-    fetchDistinctValues();
-  }, []);
+  const handleCsvUpload = async (e) => {
+    e.preventDefault();
+    if (!csvFile) {
+      alert('Please select a CSV file first');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', csvFile);
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/subjects/upload-csv', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error uploading CSV');
+      }
+
+      setSuccessMessage(`Successfully added ${data.addedCount} subjects`);
+      setCsvFile(null);
+      // Reset file input
+      e.target.reset();
+      
+      // Refresh both subjects list and distinct values
+      await Promise.all([fetchSubjects(), fetchDistinctValues()]);
+    } catch (error) {
+      console.error('Error uploading CSV:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    }
+  };
+
+  const handleCsvFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type !== 'text/csv') {
+      alert('Please upload a CSV file');
+      e.target.value = '';
+      return;
+    }
+    setCsvFile(file);
+  };
+
+  const handleDeleteFilteredSubjects = async () => {
+    try {
+      const activeFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== '')
+      );
+      
+      const queryParams = new URLSearchParams(activeFilters).toString();
+      
+      const response = await fetch(`/api/subjects?${queryParams}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete filtered subjects');
+      }
+
+      setSuccessMessage('Filtered subjects deleted successfully');
+      
+      // Refresh both subjects list and distinct values
+      await Promise.all([fetchSubjects(), fetchDistinctValues()]);
+
+      // Reset filters if all subjects of a particular filter are deleted
+      setFilters(prev => ({
+        ...prev,
+        regulation: '',
+        branch: ''
+      }));
+
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error deleting filtered subjects:', error);
+      alert(error.message || 'Error deleting filtered subjects');
+    }
+  };
 
   useEffect(() => {
     fetchSubjects();
-  }, [filters]);
+    fetchDistinctValues();
+  }, [fetchSubjects]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -224,11 +309,7 @@ function SubjectsManagement() {
       <h2 className="text-2xl font-bold">Subjects Management</h2>
       
       {/* Success Message */}
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )}
+      {successMessage && <Toast message={successMessage} />}
       
       {/* Add New Subject Form */}
       <div className="bg-white p-4 rounded-lg shadow space-y-4">
@@ -348,6 +429,36 @@ function SubjectsManagement() {
         </form>
       </div>
 
+      {/* Add CSV Upload Form - Add this after the "Add New Subject" form */}
+      <div className="bg-white p-4 rounded-lg shadow space-y-4">
+        <h3 className="font-semibold">Upload Subjects via CSV</h3>
+        <form onSubmit={handleCsvUpload} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="csv-file" className="block text-sm font-medium text-gray-700">
+              Choose CSV File
+            </label>
+            <input
+              id="csv-file"
+              type="file"
+              accept=".csv"
+              onChange={handleCsvFileChange}
+              className="w-full border rounded p-2"
+              required
+            />
+            <p className="text-sm text-gray-500">
+              CSV should have headers: regulation,year,branch,semester,subjectCode,subjectName
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-green-300"
+            disabled={loading || !csvFile}
+          >
+            {loading ? 'Uploading...' : 'Upload CSV'}
+          </button>
+        </form>
+      </div>
+
       {/* Filter section */}
       <div className="bg-white p-4 rounded-lg shadow space-y-4">
         <h3 className="font-semibold">Filter Subjects</h3>
@@ -439,29 +550,44 @@ function SubjectsManagement() {
 
         {!loading && !error && subjects.length > 0 && (
           <>
-            <div className="overflow-x-auto">
+            <div className="w-full">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Regulation</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semester</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th scope="col" className="w-24 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Regulation</th>
+                    <th scope="col" className="w-24 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                    <th scope="col" className="w-16 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                    <th scope="col" className="w-20 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Semester</th>
+                    <th scope="col" className="w-32 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject Code</th>
+                    <th scope="col" className="flex-1 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject Name</th>
+                    <th scope="col" className="w-20 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th scope="col" className="w-24 px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete all filtered subjects?')) {
+                            handleDeleteFilteredSubjects();
+                          }
+                        }}
+                        className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 transition-colors duration-200 flex items-center space-x-1 text-xs"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Delete All</span>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentSubjects.map((subject) => (
                     <tr key={subject._id}>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.regulation}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.branch}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.year}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.semester}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.subjectCode}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{subject.subjectName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">{subject.regulation}</td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">{subject.branch}</td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">{subject.year}</td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">{subject.semester}</td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">{subject.subjectCode}</td>
+                      <td className="px-2 py-3 text-sm break-words">{subject.subjectName}</td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap">
                         <button
                           onClick={() => handleDeleteSubject(subject._id)}
                           className="text-red-600 hover:text-red-900"
@@ -469,6 +595,7 @@ function SubjectsManagement() {
                           Delete
                         </button>
                       </td>
+                      <td className="px-2 py-3 text-sm whitespace-nowrap"></td>
                     </tr>
                   ))}
                 </tbody>

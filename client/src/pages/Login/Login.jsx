@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header/Header';
+import FirstLoginModal from '../../components/FirstLoginModal';
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [userType, setUserType] = useState('evaluator');
@@ -12,28 +14,47 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [loginResponse, setLoginResponse] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         email,
         password,
         userType
       });
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('userRole', response.data.user.role);
-      if (response.data.user.role === 'admin') {
-        navigate('/admin/dashboard');
+
+      setLoginResponse(response);
+
+      if (response.data.user.isFirstLogin && response.data.user.role === 'evaluator') {
+        setUserId(response.data.user.id);
+        setShowFirstLoginModal(true);
       } else {
-        navigate('/evaluator/dashboard');
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userRole', response.data.user.role);
+        if (response.data.user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/evaluator/dashboard');
+        }
       }
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePasswordChange = () => {
+    setShowFirstLoginModal(false);
+    localStorage.setItem('token', loginResponse.data.token);
+    localStorage.setItem('userRole', 'evaluator');
+    navigate('/evaluator/dashboard');
   };
 
   return (
@@ -183,6 +204,13 @@ const LoginPage = () => {
           </form>
         </div>
       </div>
+
+      {showFirstLoginModal && (
+        <FirstLoginModal 
+          userId={userId} 
+          onPasswordChange={handlePasswordChange} 
+        />
+      )}
     </div>
   );
 };

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import CreateEvaluation from './CreateEvaluation';
 import UserManagement from './UserManagement';
 import SubjectsManagement from './SubjectsManagement';
+import Dashboard from './Dashboard';
+import { MdAssignment, MdPeople, MdSubject, MdDashboard } from 'react-icons/md';
 function AdminDashboard() {
-  const [activeMenu, setActiveMenu] = useState('create-evaluation');
+  const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -27,40 +29,55 @@ function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#EBF3FA] flex">
       {/* Sidebar */}
-      <div className={`${isSidebarOpen ? 'w-48' : 'w-0'} fixed left-0 top-0 bg-[#0C5A93] text-white h-screen transition-all duration-300 overflow-hidden`}>
+      <div className={`${isSidebarOpen ? 'w-56' : 'w-0'} fixed left-0 top-0 bg-[#0C5A93] text-white h-screen transition-all duration-300 overflow-hidden`}>
         <div className="p-3 border-b border-blue-700">
           <h1 className="text-base font-semibold">E-Valuation Portal</h1>
         </div>
         <nav className="mt-2">
           <div className="flex flex-col">
             <button
-              className={`px-6 py-3 text-left ${
+              className={`px-6 py-3 text-left flex items-center gap-2 ${
+                activeMenu === 'dashboard'
+                  ? 'bg-[#094875] border-l-4 border-white'
+                  : 'hover:bg-[#094875]'
+              }`}
+              onClick={() => setActiveMenu('dashboard')}
+            >
+              <MdDashboard className="text-xl" />
+              Dashboard
+            </button>
+            <button
+              data-menu="create-evaluation"
+              className={`px-6 py-3 text-left flex items-center gap-2 ${
                 activeMenu === 'create-evaluation'
                   ? 'bg-[#094875] border-l-4 border-white'
                   : 'hover:bg-[#094875]'
               }`}
               onClick={() => setActiveMenu('create-evaluation')}
             >
+              <MdAssignment className="text-xl" />
               Create Evaluation
             </button>
             <button
-              className={`px-6 py-3 text-left ${
+              className={`px-6 py-3 text-left flex items-center gap-2 ${
                 activeMenu === 'user-management'
                   ? 'bg-[#094875] border-l-4 border-white'
                   : 'hover:bg-[#094875]'
               }`}
               onClick={() => setActiveMenu('user-management')}
             >
+              <MdPeople className="text-xl" />
               User Management
             </button>
             <button
-              className={`px-6 py-3 text-left ${
+              className={`px-6 py-3 text-left flex items-center gap-2 ${
                 activeMenu === 'subjects'
                   ? 'bg-[#094875] border-l-4 border-white'
                   : 'hover:bg-[#094875]'
               }`}
               onClick={() => setActiveMenu('subjects')}
             >
+              <MdSubject className="text-xl" />
               Subjects
             </button>
           </div>
@@ -68,7 +85,7 @@ function AdminDashboard() {
       </div>
 
       {/* Main Content Area */}
-      <div className={`flex-1 ${isSidebarOpen ? 'ml-48' : 'ml-0'} transition-all duration-300`}>
+      <div className={`flex-1 ${isSidebarOpen ? 'ml-56' : 'ml-0'} transition-all duration-300`}>
         {/* Header */}
         <header className="bg-[#0C5A93] text-white shadow">
           <div className="flex justify-between items-center px-4 py-2">
@@ -124,7 +141,15 @@ function AdminDashboard() {
         </header>
 
         <main className="p-8">
-          {activeMenu === 'create-evaluation' ? <CreateEvaluation /> : activeMenu === 'user-management' ? <UserManagement /> : <SubjectsManagement />}
+          {activeMenu === 'create-evaluation' ? (
+            <CreateEvaluation />
+          ) : activeMenu === 'user-management' ? (
+            <UserManagement />
+          ) : activeMenu === 'dashboard' ? (
+            <Dashboard />
+          ) : (
+            <SubjectsManagement />
+          )}
         </main>
       </div>
     </div>

@@ -59,6 +59,33 @@ const subjectController = {
       console.error('Error deleting subject:', error);
       res.status(500).json({ message: 'Error deleting subject', error: error.message });
     }
+  },
+
+  // Delete filtered subjects
+  deleteFilteredSubjects: async (req, res) => {
+    try {
+      const { regulation, year, branch, semester } = req.query;
+      
+      // Build filter object based on provided query parameters
+      const filter = {};
+      if (regulation) filter.regulation = regulation;
+      if (year) filter.year = year;
+      if (branch) filter.branch = branch;
+      if (semester) filter.semester = semester;
+
+      const result = await Subject.deleteMany(filter);
+      
+      res.json({ 
+        message: 'Filtered subjects deleted successfully',
+        deletedCount: result.deletedCount 
+      });
+    } catch (error) {
+      console.error('Error deleting filtered subjects:', error);
+      res.status(500).json({ 
+        message: 'Error deleting filtered subjects', 
+        error: error.message 
+      });
+    }
   }
 };
 

@@ -35,19 +35,22 @@ router.post('/create', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Create new user
-    const userData = {
+    let userData = {
       username,
       email,
-      password: hashedPassword,
       role
     };
 
-    // Add evaluator-specific fields if role is evaluator
-    if (role === 'evaluator') {
+    // Handle password differently for admin and evaluator
+    if (role === 'admin') {
+      // For admin, directly hash the password
+      userData.password = await bcrypt.hash(password, 10);
+      userData.isFirstLogin = false;
+    } else {
+      // For evaluator, store both hashed password and temporary password
+      userData.password = await bcrypt.hash(password, 10);
+      userData.tempPassword = password; // Store original password as tempPassword
+      userData.isFirstLogin = true;
       userData.subjects = subjects;
       userData.assignedPapers = assignedPapers;
     }
@@ -56,6 +59,7 @@ router.post('/create', async (req, res) => {
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
+    console.error('Error creating user:', error);
     res.status(500).json({ message: 'Error creating user' });
   }
 });

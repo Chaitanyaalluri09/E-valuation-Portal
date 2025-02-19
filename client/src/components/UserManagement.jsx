@@ -319,36 +319,49 @@ function UserManagement() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th className="w-28 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+              <th className="w-40 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
               {selectedRole !== 'admin' && (
                 <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subjects</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Papers</th>
+                  <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subjects</th>
+                  <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Papers</th>
                 </>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredUsers.map(user => (
               <tr key={user._id}>
-                <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap capitalize">{user.role}</td>
+                <td className="px-3 py-3 text-sm">{user.username}</td>
+                <td className="px-3 py-3 text-sm break-words">{user.email}</td>
+                <td className="px-3 py-3 text-sm capitalize">{user.role}</td>
                 {selectedRole !== 'admin' && (
                   <>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.role === 'evaluator' ? user.subjects?.join(', ') : '-'}
+                    <td className="px-3 py-3 text-sm">
+                      {user.role === 'evaluator' ? (
+                        <div className="flex flex-col gap-1">
+                          {user.subjects?.map(subject => (
+                            <span 
+                              key={subject} 
+                              className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 text-sm">
                       {user.role === 'evaluator' ? user.assignedPapers : '-'}
                     </td>
                   </>
                 )}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex space-x-4">
+                <td className="px-3 py-3 text-sm">
+                  <div className="flex flex-col gap-2">
                     <button
                       onClick={() => handleEdit(user)}
                       className="text-indigo-600 hover:text-indigo-900"

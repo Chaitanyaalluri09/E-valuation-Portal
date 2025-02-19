@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  isFirstLogin: {
+    type: Boolean,
+    default: true
+  },
+  tempPassword: String
 });
 
 module.exports = mongoose.model('User', userSchema);

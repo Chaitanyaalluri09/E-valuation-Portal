@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const subjectController = require('../controllers/subjectController');
 const Subject = require('../models/Subject');
+const multer = require('multer');
+const csv = require('csv-parse');
+const fs = require('fs');
+
+// Configure multer for file upload
+const upload = multer({ dest: 'uploads/' });
 
 // Get all subjects (with optional filters)
 router.get('/', async (req, res) => {
@@ -27,6 +33,9 @@ router.post('/', subjectController.createSubject);
 
 // Delete a subject
 router.delete('/:id', subjectController.deleteSubject);
+
+// Add this new route - make sure to add it BEFORE the '/:id' route
+router.delete('/', subjectController.deleteFilteredSubjects);
 
 // Add these new routes BEFORE any existing routes
 router.get('/distinct/regulation', async (req, res) => {
@@ -67,6 +76,82 @@ router.get('/filter', async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       message: 'Error fetching subjects',
+      error: error.message 
+    });
+  }
+});
+
+// Add this new route for CSV upload
+router.post('/upload-csv', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  const results = [];
+  let addedCount = 0;
+
+  try {
+    fs.createReadStream(req.file.path)
+      .pipe(csv.parse({ 
+        columns: true, 
+        trim: true,
+        skipEmptyLines: true 
+      }))
+      .on('data', (data) => {
+        // Clean and map the data
+        const cleanedData = {
+          regulation: data.regulation?.trim(),
+          year: data.year?.trim(),
+          branch: data.branch?.trim(),
+          semester: data.semester?.trim(), // Changed from data.sem to data.semester
+          subjectCode: data.subjectCode?.trim(),
+          subjectName: data.subjectName?.trim()
+        };
+        results.push(cleanedData);
+      })
+      .on('end', async () => {
+        try {
+          // Insert all subjects
+          const insertPromises = results.map(async (subject) => {
+            try {
+              // Validate data before creating
+              if (!subject.semester) {
+                console.warn(`Missing semester for subject ${subject.subjectCode}`);
+                return null;
+              }
+              return await Subject.create(subject);
+            } catch (err) {
+              console.warn(`Error inserting subject ${subject.subjectCode}:`, err.message);
+              return null;
+            }
+          });
+
+          const inserted = await Promise.all(insertPromises);
+          addedCount = inserted.filter(Boolean).length;
+
+          // Clean up - delete uploaded file
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+
+          res.json({ 
+            message: 'CSV processed successfully', 
+            addedCount,
+            totalRecords: results.length,
+            failedRecords: results.length - addedCount
+          });
+        } catch (error) {
+          console.error('Error processing CSV data:', error);
+          res.status(500).json({ 
+            message: 'Error processing CSV data', 
+            error: error.message 
+          });
+        }
+      });
+  } catch (error) {
+    console.error('Error reading CSV:', error);
+    res.status(500).json({ 
+      message: 'Error reading CSV file', 
       error: error.message 
     });
   }
