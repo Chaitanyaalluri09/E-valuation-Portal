@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { MdAssignment } from 'react-icons/md';
 import Toast from './Toast';
 
@@ -11,7 +11,7 @@ function Dashboard() {
 
   const fetchEvaluations = async () => {
     try {
-      const response = await axios.get('/api/evaluations');
+      const response = await axiosInstance.get('/api/evaluations');
       setEvaluations(response.data);
     } catch (error) {
       setError('Failed to fetch evaluations');
@@ -31,7 +31,7 @@ function Dashboard() {
     }
 
     try {
-      await axios.delete(`/api/evaluations/${evaluationId}`);
+      await axiosInstance.delete(`/api/evaluations/${evaluationId}`);
       fetchEvaluations(); // Refresh the list
       setSuccessMessage('Evaluation deleted successfully');
       

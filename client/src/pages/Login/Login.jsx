@@ -31,12 +31,14 @@ const LoginPage = () => {
 
       setLoginResponse(response);
 
+      // Store token immediately after successful login
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userRole', response.data.user.role);
+
       if (response.data.user.isFirstLogin && response.data.user.role === 'evaluator') {
         setUserId(response.data.user.id);
         setShowFirstLoginModal(true);
       } else {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('userRole', response.data.user.role);
         if (response.data.user.role === 'admin') {
           navigate('/admin/dashboard');
         } else {

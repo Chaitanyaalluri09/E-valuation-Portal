@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import Toast from './Toast';
 
 function CreateEvaluation() {
@@ -26,7 +26,7 @@ function CreateEvaluation() {
   useEffect(() => {
     const fetchEvaluators = async () => {
       try {
-        const response = await axios.get('/api/users');
+        const response = await axiosInstance.get('/api/users');
         const evaluatorsList = response.data.filter(user => user.role === 'evaluator');
         setEvaluators(evaluatorsList);
       } catch (error) {
@@ -45,7 +45,7 @@ function CreateEvaluation() {
       }
 
       try {
-        const response = await axios.get('/api/subjects/filter', {
+        const response = await axiosInstance.get('/api/subjects/filter', {
           params: {
             regulation: formData.regulation,
             year: formData.year,
@@ -70,7 +70,7 @@ function CreateEvaluation() {
         return;
       }
       try {
-        const response = await axios.get(`/api/subjects/distinct/branch?regulation=${formData.regulation}`);
+        const response = await axiosInstance.get(`/api/subjects/distinct/branch?regulation=${formData.regulation}`);
         setBranches(response.data);
       } catch (error) {
         console.error('Error fetching branches:', error);
@@ -82,7 +82,7 @@ function CreateEvaluation() {
   useEffect(() => {
     const fetchRegulations = async () => {
       try {
-        const response = await axios.get('/api/subjects/distinct/regulation');
+        const response = await axiosInstance.get('/api/subjects/distinct/regulation');
         setRegulations(response.data);
       } catch (error) {
         console.error('Error fetching regulations:', error);
@@ -171,7 +171,7 @@ function CreateEvaluation() {
         submitFormData.append('files', file);
       });
 
-      await axios.post('/api/evaluations/create', submitFormData, {
+      await axiosInstance.post('/api/evaluations/create', submitFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

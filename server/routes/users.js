@@ -3,9 +3,11 @@ const router = express.Router();
 const User = require('../models/User');
 const Subject = require('../models/Subject');
 const bcrypt = require('bcryptjs');
+const { verifyToken, isAdmin } = require('../middleware/auth');
+const userController = require('../controllers/userController');
 
 // Get distinct subjects
-router.get('/subjects', async (req, res) => {
+router.get('/subjects', verifyToken, async (req, res) => {
   try {
     const subjects = await Subject.find().distinct('subjectName');
     res.json(subjects);
@@ -15,7 +17,7 @@ router.get('/subjects', async (req, res) => {
 });
 
 // Get all users
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const users = await User.find({}, '-password'); // Exclude password from response
     res.json(users);
@@ -25,7 +27,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create new user
-router.post('/create', async (req, res) => {
+router.post('/create', verifyToken, isAdmin, async (req, res) => {
   try {
     const { username, email, password, role, subjects, assignedPapers } = req.body;
     
@@ -65,7 +67,7 @@ router.post('/create', async (req, res) => {
 });
 
 // Update user
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { username, email, password, role, subjects, assignedPapers } = req.body;
     const updateData = { username, email, role };
@@ -92,7 +94,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete user
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     
@@ -106,5 +108,8 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting user' });
   }
 });
+
+// Get current user route
+router.get('/me', verifyToken, userController.getCurrentUser);
 
 module.exports = router; 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 
 function UserManagement() {
@@ -25,7 +25,7 @@ function UserManagement() {
   const fetchUsers = async () => {
     try {
       console.log('Attempting to fetch users...');
-      const response = await axios.get('/api/users');
+      const response = await axiosInstance.get('/api/users');
       console.log('Response received:', response);
       setUsers(response.data);
     } catch (error) {
@@ -40,7 +40,7 @@ function UserManagement() {
 
   const fetchSubjects = async () => {
     try {
-      const response = await axios.get('/api/users/subjects');
+      const response = await axiosInstance.get('/api/users/subjects');
       setAvailableSubjects(response.data);
     } catch (error) {
       console.error('Error fetching subjects:', error);
@@ -68,14 +68,10 @@ function UserManagement() {
       }
       
       if (editingUser) {
-        await axios.put(`/api/users/${editingUser._id}`, submitData, {
-          withCredentials: true
-        });
+        await axiosInstance.put(`/api/users/${editingUser._id}`, submitData);
         setSuccessMessage('User updated successfully!');
       } else {
-        await axios.post('/api/users/create', submitData, {
-          withCredentials: true
-        });
+        await axiosInstance.post('/api/users/create', submitData);
         setSuccessMessage('User created successfully!');
       }
       resetForm();
@@ -104,9 +100,7 @@ function UserManagement() {
   const handleDelete = async (user) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        const response = await axios.delete(`/api/users/${user._id}`, {
-          withCredentials: true
-        });
+        const response = await axiosInstance.delete(`/api/users/${user._id}`);
         setSuccessMessage(response.data?.message || 'User deleted successfully');
         fetchUsers();
         

@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/Login/Login';
 import AdminDashboard from './components/AdminDashboard';
+import EvaluatorDashboard from './components/EvaluatorDashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -33,7 +34,7 @@ function App() {
           path="/evaluator/dashboard" 
           element={
             <ProtectedRoute>
-              <div>Evaluator Dashboard (To be created)</div>
+              <EvaluatorDashboard />
             </ProtectedRoute>
           } 
         />

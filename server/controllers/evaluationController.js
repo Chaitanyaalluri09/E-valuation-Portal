@@ -4,6 +4,30 @@ const { uploadToS3 } = require('../utils/s3');
 const { sendEvaluationEmail } = require('../utils/emailService');
 
 const evaluationController = {
+  // Get all evaluations (admin only)
+  getAllEvaluations: async (req, res) => {
+    try {
+      const evaluations = await Evaluation.find().sort({ createdAt: -1 });
+      res.json(evaluations);
+    } catch (error) {
+      console.error('Error fetching evaluations:', error);
+      res.status(500).json({ message: 'Error fetching evaluations' });
+    }
+  },
+
+  // Get evaluator's evaluations
+  getEvaluatorEvaluations: async (req, res) => {
+    try {
+      const evaluations = await Evaluation.find({ evaluator: req.user.userId })
+        .sort({ createdAt: -1 });
+      res.json(evaluations);
+    } catch (error) {
+      console.error('Error fetching evaluations:', error);
+      res.status(500).json({ message: 'Error fetching evaluations' });
+    }
+  },
+
+  // Create evaluation
   createEvaluation: async (req, res) => {
     try {
       // Check if files exist
@@ -121,57 +145,49 @@ const evaluationController = {
 
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      res.status(500).json({
-        message: 'Error creating evaluation',
-        error: error.message
-      });
+      res.status(500).json({ message: 'Error creating evaluation' });
     }
   },
 
-  getAllEvaluations: async (req, res) => {
+  // Get single evaluation
+  getEvaluation: async (req, res) => {
     try {
-      const evaluations = await Evaluation.find()
-        .populate('evaluator', 'username')
-        .sort({ createdAt: -1 });
-      res.json(evaluations);
-    } catch (error) {
-      console.error('Error fetching evaluations:', error);
-      res.status(500).json({ message: 'Error fetching evaluations' });
-    }
-  },
-
-  deleteEvaluation: async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      // Get evaluation details before deletion
-      const evaluation = await Evaluation.findById(id);
+      const evaluation = await Evaluation.findById(req.params.id);
       if (!evaluation) {
         return res.status(404).json({ message: 'Evaluation not found' });
       }
+      res.json(evaluation);
+    } catch (error) {
+      console.error('Error fetching evaluation:', error);
+      res.status(500).json({ message: 'Error fetching evaluation' });
+    }
+  },
 
-      // Delete files from S3
-      const { deleteFromS3 } = require('../utils/s3');
-      const s3DeletePromises = [
-        deleteFromS3(evaluation.questionPaperUrl),
-        ...evaluation.studentSubmissions.map(submission => 
-          deleteFromS3(submission.answerPaperUrl)
-        )
-      ];
-      await Promise.all(s3DeletePromises);
-
-      // Update evaluator's assigned papers count
-      await User.findByIdAndUpdate(
-        evaluation.evaluator,
-        { 
-          $inc: { assignedPapers: -evaluation.studentSubmissions.length },
-          $pull: { assignedEvaluations: evaluation._id }
-        }
+  // Update evaluation
+  updateEvaluation: async (req, res) => {
+    try {
+      const evaluation = await Evaluation.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
       );
+      if (!evaluation) {
+        return res.status(404).json({ message: 'Evaluation not found' });
+      }
+      res.json(evaluation);
+    } catch (error) {
+      console.error('Error updating evaluation:', error);
+      res.status(500).json({ message: 'Error updating evaluation' });
+    }
+  },
 
-      // Delete the evaluation
-      await Evaluation.findByIdAndDelete(id);
-
+  // Delete evaluation
+  deleteEvaluation: async (req, res) => {
+    try {
+      const evaluation = await Evaluation.findByIdAndDelete(req.params.id);
+      if (!evaluation) {
+        return res.status(404).json({ message: 'Evaluation not found' });
+      }
       res.json({ message: 'Evaluation deleted successfully' });
     } catch (error) {
       console.error('Error deleting evaluation:', error);
