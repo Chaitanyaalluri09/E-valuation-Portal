@@ -115,7 +115,9 @@ function Dashboard() {
                   <div className="pt-2">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Evaluator</span>
-                      <span className="font-medium truncate">{evaluation.evaluator.username}</span>
+                      <span className="font-medium truncate">
+                        {evaluation.evaluator?.username || 'Not Assigned'}
+                      </span>
                     </div>
                   </div>
 
@@ -142,6 +144,18 @@ function Dashboard() {
                     <span className="text-gray-600">End Date</span>
                     <span className="text-red-600 font-medium">
                       {new Date(evaluation.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Evaluation Status */}
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-gray-600">Status</span>
+                    <span className="font-medium" style={{ 
+                      color: evaluation.status === 'Not Started' ? '#CA8A04' :  // yellow-600
+                             evaluation.status === 'In Progress' ? '#2563EB' :  // blue-600
+                             '#16A34A'  // green-600 for Completed
+                    }}>
+                      {evaluation.status}
                     </span>
                   </div>
 

@@ -11,8 +11,8 @@ const studentSubmissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'evaluated', 'reviewed'],
-    default: 'pending'
+    enum: ['Not Started', 'In Progress', 'Compeleted'],
+    default: 'Not Started'
   },
   marks: {
     type: Number,

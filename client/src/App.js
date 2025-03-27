@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/Login/Login';
 import AdminDashboard from './components/AdminDashboard';
 import EvaluatorDashboard from './components/EvaluatorDashboard';
+import PapersList from './components/PapersList';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -38,6 +39,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route path="/evaluator/evaluation/:id" element={<PapersList />} />
       </Routes>
     </Router>
   );

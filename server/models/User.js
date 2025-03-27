@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
     default: 0,
     required: function() { return this.role === 'evaluator'; }
   },
+  assignedEvaluations: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Evaluation'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

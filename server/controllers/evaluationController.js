@@ -1,13 +1,15 @@
 const Evaluation = require('../models/Evaluation');
 const User = require('../models/User');
-const { uploadToS3 } = require('../utils/s3');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const { sendEvaluationEmail } = require('../utils/emailService');
 
 const evaluationController = {
   // Get all evaluations (admin only)
   getAllEvaluations: async (req, res) => {
     try {
-      const evaluations = await Evaluation.find().sort({ createdAt: -1 });
+      const evaluations = await Evaluation.find()
+        .populate('evaluator', 'username')
+        .sort({ createdAt: -1 });
       res.json(evaluations);
     } catch (error) {
       console.error('Error fetching evaluations:', error);
@@ -90,7 +92,7 @@ const evaluationController = {
             return {
               registerNumber: registerNumbers[index],
               answerPaperUrl,
-              status: 'pending',
+              status: 'Not Started',
               marks: null
             };
           })
@@ -120,7 +122,7 @@ const evaluationController = {
           isFirstEvaluation ? evaluatorUser.tempPassword : null
         );
 
-        // Update evaluator's assigned papers count after sending email
+        // Update evaluator's assigned papers count and add evaluation reference
         await User.findByIdAndUpdate(
           evaluator,
           { 
@@ -145,7 +147,10 @@ const evaluationController = {
 
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      res.status(500).json({ message: 'Error creating evaluation' });
+      res.status(500).json({
+        message: 'Error during file upload or database operation',
+        error: error.message
+      });
     }
   },
 
@@ -184,10 +189,40 @@ const evaluationController = {
   // Delete evaluation
   deleteEvaluation: async (req, res) => {
     try {
-      const evaluation = await Evaluation.findByIdAndDelete(req.params.id);
+      // Find the evaluation first
+      const evaluation = await Evaluation.findById(req.params.id);
       if (!evaluation) {
         return res.status(404).json({ message: 'Evaluation not found' });
       }
+
+      // Delete question paper from S3
+      try {
+        await deleteFromS3(evaluation.questionPaperUrl);
+      } catch (error) {
+        console.error('Error deleting question paper from S3:', error);
+      }
+
+      // Delete all answer papers from S3
+      for (const submission of evaluation.studentSubmissions) {
+        try {
+          await deleteFromS3(submission.answerPaperUrl);
+        } catch (error) {
+          console.error('Error deleting answer paper from S3:', error);
+        }
+      }
+
+      // Update evaluator's assigned papers count and remove evaluation reference
+      await User.findByIdAndUpdate(
+        evaluation.evaluator,
+        {
+          $inc: { assignedPapers: -evaluation.studentSubmissions.length },
+          $pull: { assignedEvaluations: evaluation._id }
+        }
+      );
+
+      // Delete the evaluation from database
+      await Evaluation.findByIdAndDelete(req.params.id);
+
       res.json({ message: 'Evaluation deleted successfully' });
     } catch (error) {
       console.error('Error deleting evaluation:', error);
