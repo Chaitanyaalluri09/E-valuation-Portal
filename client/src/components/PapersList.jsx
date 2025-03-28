@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import axiosInstance from '../utils/axiosConfig';
+import { MdArrowBack } from 'react-icons/md';
 
 function PapersList() {
   const { id } = useParams();
@@ -49,6 +50,10 @@ function PapersList() {
     navigate('/', { replace: true });
   };
 
+  const handleBackClick = () => {
+    navigate('/evaluator/dashboard');
+  };
+
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-600">{error}</div>;
   if (!evaluation) return <div className="p-4">No evaluation found</div>;
@@ -57,8 +62,16 @@ function PapersList() {
     <div className="min-h-screen bg-[#EBF3FA]">
       {/* Header with adjusted padding */}
       <header className="bg-[#0C5A93] text-white shadow">
-        <div className="px-4 py-3">
-          <h2 className="text-center text-base font-bold">
+        <div className="px-4 py-3 flex items-center">
+          {/* Back button */}
+          <button 
+            onClick={handleBackClick}
+            className="mr-2 hover:bg-[#094875] p-2 rounded transition-colors flex items-center"
+            title="Back to Dashboard"
+          >
+            <MdArrowBack className="text-xl" />
+          </button>
+          <h2 className="text-center text-base font-bold flex-1">
             SAGI RAMA KRISHNAM RAJU ENGINEERING COLLEGE (AUTONOMOUS)
           </h2>
         </div>
