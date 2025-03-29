@@ -59,9 +59,17 @@ function PapersList() {
     try {
       setStartingEvaluation(true);
       // Update the submission status to 'In Progress' before navigating
-      await axiosInstance.patch(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
+      const response = await axiosInstance.patch(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
         status: 'In Progress'
       });
+      
+      // Update local evaluation status if returned in response
+      if (response.data.evaluationStatus) {
+        setEvaluation(prev => ({
+          ...prev,
+          status: response.data.evaluationStatus
+        }));
+      }
       
       navigate(`/evaluator/paper/${evaluationId}/${submissionId}`);
     } catch (error) {
@@ -69,6 +77,13 @@ function PapersList() {
       setError('Failed to start evaluation. Please try again.');
     } finally {
       setStartingEvaluation(false);
+    }
+  };
+
+  const styles = {
+    tableContainer: {
+      height: 'calc(100vh - 180px)', // Adjust 180px based on your header height
+      overflowY: 'auto'
     }
   };
 
@@ -96,12 +111,12 @@ function PapersList() {
       </header>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 h-full">
         <h2 className="text-2xl font-bold mb-6 text-[#0C5A93]">{evaluation.subject} - Papers List</h2>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-hidden" style={styles.tableContainer}>
           <table className="min-w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Paper ID

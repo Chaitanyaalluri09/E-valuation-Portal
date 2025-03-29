@@ -260,9 +260,19 @@ const evaluationController = {
       }
 
       submission.status = status;
+
+      // Update evaluation status if a submission is marked as "In Progress"
+      if (status === 'In Progress' && evaluation.status === 'Not Started') {
+        evaluation.status = 'In Progress';
+      }
+
       await evaluation.save();
 
-      res.status(200).json({ message: 'Submission status updated successfully', submission });
+      res.status(200).json({ 
+        message: 'Submission status updated successfully', 
+        submission,
+        evaluationStatus: evaluation.status 
+      });
     } catch (error) {
       console.error('Error updating submission status:', error);
       res.status(500).json({ message: 'Error updating submission status', error: error.message });
