@@ -4,7 +4,8 @@ import CreateEvaluation from './CreateEvaluation';
 import UserManagement from './UserManagement';
 import SubjectsManagement from './SubjectsManagement';
 import Dashboard from './Dashboard';
-import { MdAssignment, MdPeople, MdSubject, MdDashboard } from 'react-icons/md';
+import PaperSchemaManagement from './PaperSchemaManagement';
+import { MdAssignment, MdPeople, MdSubject, MdDashboard, MdSchema } from 'react-icons/md';
 function AdminDashboard() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -80,6 +81,17 @@ function AdminDashboard() {
               <MdSubject className="text-xl" />
               Subjects
             </button>
+            <button
+              className={`px-6 py-3 text-left flex items-center gap-2 ${
+                activeMenu === 'paper-schema'
+                  ? 'bg-[#094875] border-l-4 border-white'
+                  : 'hover:bg-[#094875]'
+              }`}
+              onClick={() => setActiveMenu('paper-schema')}
+            >
+              <MdSchema className="text-xl" />
+              Paper Schema
+            </button>
           </div>
         </nav>
       </div>
@@ -147,6 +159,8 @@ function AdminDashboard() {
             <UserManagement />
           ) : activeMenu === 'dashboard' ? (
             <Dashboard />
+          ) : activeMenu === 'paper-schema' ? (
+            <PaperSchemaManagement />
           ) : (
             <SubjectsManagement />
           )}

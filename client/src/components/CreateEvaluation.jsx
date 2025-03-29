@@ -11,6 +11,7 @@ function CreateEvaluation() {
     subject: '',
     evaluator: '',
     numberOfStudents: '',
+    paperSchema: ''
   });
   const [evaluators, setEvaluators] = useState([]);
   const [files, setFiles] = useState(new Array(0));
@@ -22,6 +23,7 @@ function CreateEvaluation() {
   const [endDate, setEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [paperSchemas, setPaperSchemas] = useState([]);
 
   useEffect(() => {
     const fetchEvaluators = async () => {
@@ -89,6 +91,18 @@ function CreateEvaluation() {
       }
     };
     fetchRegulations();
+  }, []);
+
+  useEffect(() => {
+    const fetchPaperSchemas = async () => {
+      try {
+        const response = await axiosInstance.get('/api/paper-schemas');
+        setPaperSchemas(response.data);
+      } catch (error) {
+        console.error('Error fetching paper schemas:', error);
+      }
+    };
+    fetchPaperSchemas();
   }, []);
 
   // Initialize register number inputs when number of students changes
@@ -162,7 +176,8 @@ function CreateEvaluation() {
         evaluator: formData.evaluator,
         numberOfStudents: parseInt(formData.numberOfStudents),
         endDate: endDate,
-        registerNumbers: registerNumbers
+        registerNumbers: registerNumbers,
+        paperSchema: formData.paperSchema
       };
 
       submitFormData.append('formData', JSON.stringify(jsonData));
@@ -188,6 +203,7 @@ function CreateEvaluation() {
         subject: '',
         evaluator: '',
         numberOfStudents: '',
+        paperSchema: ''
       });
       setFiles(new Array(0));
       setRegisterNumbers(new Array(0));
@@ -360,6 +376,23 @@ function CreateEvaluation() {
           </div>
 
           <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700">Paper Schema</label>
+            <select
+              value={formData.paperSchema}
+              onChange={(e) => setFormData({...formData, paperSchema: e.target.value})}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 text-sm"
+              required
+            >
+              <option value="">Select Paper Schema</option>
+              {paperSchemas.map(schema => (
+                <option key={schema._id} value={schema._id}>
+                  {schema.name} - {schema.totalSets} sets, {schema.totalMarks} marks
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700">Evaluator</label>
             <select
               value={formData.evaluator}
@@ -420,6 +453,7 @@ function CreateEvaluation() {
                   subject: '',
                   evaluator: '',
                   numberOfStudents: '',
+                  paperSchema: ''
                 });
                 setFiles(new Array(0));
                 setRegisterNumbers(new Array(0));

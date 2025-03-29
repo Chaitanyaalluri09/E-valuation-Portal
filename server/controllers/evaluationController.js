@@ -2,6 +2,7 @@ const Evaluation = require('../models/Evaluation');
 const User = require('../models/User');
 const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const { sendEvaluationEmail } = require('../utils/emailService');
+const PaperSchema = require('../models/PaperSchema');
 
 const evaluationController = {
   // Get all evaluations (admin only)
@@ -66,14 +67,23 @@ const evaluationController = {
         evaluator,
         numberOfStudents,
         endDate,
-        registerNumbers
+        registerNumbers,
+        paperSchema
       } = formData;
 
       // Validate required fields
-      if (!regulation || !year || !branch || !semester || !subject || !evaluator || !endDate || !registerNumbers) {
+      if (!regulation || !year || !branch || !semester || !subject || !evaluator || !endDate || !registerNumbers || !paperSchema) {
         return res.status(400).json({
           message: 'Missing required fields',
           receivedData: formData
+        });
+      }
+
+      // Validate paper schema exists
+      const schemaExists = await PaperSchema.findById(paperSchema);
+      if (!schemaExists) {
+        return res.status(400).json({
+          message: 'Invalid paper schema'
         });
       }
 
@@ -93,12 +103,13 @@ const evaluationController = {
               registerNumber: registerNumbers[index],
               answerPaperUrl,
               status: 'Not Started',
-              marks: null
+              questionMarks: [],
+              totalMarks: null
             };
           })
         );
 
-        // Create evaluation
+        // Create evaluation with paper schema
         const evaluation = new Evaluation({
           regulation,
           year,
@@ -106,6 +117,7 @@ const evaluationController = {
           semester,
           subject,
           evaluator,
+          paperSchema,
           questionPaperUrl,
           endDate: new Date(endDate),
           studentSubmissions,

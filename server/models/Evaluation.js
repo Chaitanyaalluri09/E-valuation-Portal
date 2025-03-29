@@ -11,10 +11,14 @@ const studentSubmissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Not Started', 'In Progress', 'Compeleted'],
+    enum: ['Not Started', 'In Progress', 'Completed'],
     default: 'Not Started'
   },
-  marks: {
+  questionMarks: [{
+    questionNumber: String,
+    marks: Number
+  }],
+  totalMarks: {
     type: Number,
     default: null
   }
@@ -63,6 +67,11 @@ const evaluationSchema = new mongoose.Schema({
     type: String,
     enum: ['Not Started', 'In Progress', 'Completed'],
     default: 'Not Started'
+  },
+  paperSchema: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PaperSchema',
+    required: true
   }
 });
 

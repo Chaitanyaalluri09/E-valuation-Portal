@@ -27,6 +27,8 @@ const subjectRoutes = require('./routes/subjects');
 app.use('/api/subjects', subjectRoutes);
 const evaluationRoutes = require('./routes/evaluations');
 app.use('/api/evaluations', evaluationRoutes);
+const paperSchemaRoutes = require('./routes/paperSchemas');
+app.use('/api/paper-schemas', paperSchemaRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
