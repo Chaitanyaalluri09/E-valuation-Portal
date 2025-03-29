@@ -5,6 +5,7 @@ import LoginPage from './pages/Login/Login';
 import AdminDashboard from './components/AdminDashboard';
 import EvaluatorDashboard from './components/EvaluatorDashboard';
 import PapersList from './components/PapersList';
+import PaperEvaluation from './components/PaperEvaluation';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -39,7 +40,22 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route path="/evaluator/evaluation/:id" element={<PapersList />} />
+        <Route 
+          path="/evaluator/evaluation/:id" 
+          element={
+            <ProtectedRoute>
+              <PapersList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/evaluator/paper/:evaluationId/:submissionId" 
+          element={
+            <ProtectedRoute>
+              <PaperEvaluation />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

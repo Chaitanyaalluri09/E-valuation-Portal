@@ -14,6 +14,7 @@ function PapersList() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [evaluatorName, setEvaluatorName] = useState('');
   const dropdownRef = useRef(null);
+  const [startingEvaluation, setStartingEvaluation] = useState(false);
 
   useEffect(() => {
     fetchEvaluation();
@@ -52,6 +53,23 @@ function PapersList() {
 
   const handleBackClick = () => {
     navigate('/evaluator/dashboard');
+  };
+
+  const handleStartEvaluation = async (evaluationId, submissionId) => {
+    try {
+      setStartingEvaluation(true);
+      // Update the submission status to 'In Progress' before navigating
+      await axiosInstance.patch(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
+        status: 'In Progress'
+      });
+      
+      navigate(`/evaluator/paper/${evaluationId}/${submissionId}`);
+    } catch (error) {
+      console.error('Error starting evaluation:', error);
+      setError('Failed to start evaluation. Please try again.');
+    } finally {
+      setStartingEvaluation(false);
+    }
   };
 
   if (loading) return <div className="p-4">Loading...</div>;
@@ -115,10 +133,15 @@ function PapersList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {submission.status === 'Not Started' ? (
                       <button
-                        onClick={() => navigate(`/evaluator/paper/${evaluation._id}/${submission._id}`)}
-                        className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition-colors"
+                        onClick={() => handleStartEvaluation(evaluation._id, submission._id)}
+                        disabled={startingEvaluation}
+                        className={`${
+                          startingEvaluation 
+                            ? 'bg-blue-400 cursor-wait' 
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        } text-white px-4 py-1 rounded transition-colors`}
                       >
-                        Start
+                        {startingEvaluation ? 'Starting...' : 'Start'}
                       </button>
                     ) : submission.status === 'In Progress' ? (
                       <button

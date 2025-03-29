@@ -228,6 +228,33 @@ const evaluationController = {
       console.error('Error deleting evaluation:', error);
       res.status(500).json({ message: 'Error deleting evaluation' });
     }
+  },
+
+  updateSubmissionStatus: async (req, res) => {
+    try {
+      const { evaluationId, submissionId } = req.params;
+      const { status } = req.body;
+
+      const evaluation = await Evaluation.findById(evaluationId);
+      
+      if (!evaluation) {
+        return res.status(404).json({ message: 'Evaluation not found' });
+      }
+
+      // Find and update the specific submission
+      const submission = evaluation.studentSubmissions.id(submissionId);
+      if (!submission) {
+        return res.status(404).json({ message: 'Submission not found' });
+      }
+
+      submission.status = status;
+      await evaluation.save();
+
+      res.status(200).json({ message: 'Submission status updated successfully', submission });
+    } catch (error) {
+      console.error('Error updating submission status:', error);
+      res.status(500).json({ message: 'Error updating submission status', error: error.message });
+    }
   }
 };
 
