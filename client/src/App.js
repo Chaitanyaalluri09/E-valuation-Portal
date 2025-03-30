@@ -6,6 +6,7 @@ import AdminDashboard from './components/AdminDashboard';
 import EvaluatorDashboard from './components/EvaluatorDashboard';
 import PapersList from './components/PapersList';
 import PaperEvaluation from './components/PaperEvaluation';
+import EvaluationResults from './components/EvaluationResults';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -53,6 +54,14 @@ function App() {
           element={
             <ProtectedRoute>
               <PaperEvaluation />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/evaluation/:evaluationId/results" 
+          element={
+            <ProtectedRoute>
+              <EvaluationResults />
             </ProtectedRoute>
           } 
         />

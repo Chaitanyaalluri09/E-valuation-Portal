@@ -45,6 +45,10 @@ const evaluationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  subjectCode: {
+    type: String,
+    required: true
+  },
   evaluator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

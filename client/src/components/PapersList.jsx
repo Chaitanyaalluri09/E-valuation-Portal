@@ -58,9 +58,11 @@ function PapersList() {
   const handleStartEvaluation = async (evaluationId, submissionId) => {
     try {
       setStartingEvaluation(true);
-      // Update the submission status to 'In Progress' before navigating
-      const response = await axiosInstance.patch(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
-        status: 'In Progress'
+      // Update to use PUT instead of PATCH
+      const response = await axiosInstance.put(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
+        status: 'In Progress',
+        questionMarks: [], // Include empty questionMarks array
+        totalMarks: 0 // Include initial totalMarks
       });
       
       // Update local evaluation status if returned in response

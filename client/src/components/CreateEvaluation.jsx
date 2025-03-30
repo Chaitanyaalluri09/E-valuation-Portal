@@ -9,6 +9,7 @@ function CreateEvaluation() {
     branch: '',
     semester: '',
     subject: '',
+    subjectCode: '',
     evaluator: '',
     numberOfStudents: '',
     paperSchema: ''
@@ -159,6 +160,17 @@ function CreateEvaluation() {
     );
   };
 
+  // Update the subject selection handler
+  const handleSubjectChange = (e) => {
+    const selectedSubject = subjects.find(subject => subject.subjectName === e.target.value);
+    setFormData({
+      ...formData,
+      subject: e.target.value,
+      subjectCode: selectedSubject ? selectedSubject.subjectCode : '',
+      evaluator: ''
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -173,6 +185,7 @@ function CreateEvaluation() {
         branch: formData.branch,
         semester: formData.semester,
         subject: formData.subject,
+        subjectCode: formData.subjectCode,
         evaluator: formData.evaluator,
         numberOfStudents: parseInt(formData.numberOfStudents),
         endDate: endDate,
@@ -201,6 +214,7 @@ function CreateEvaluation() {
         branch: '',
         semester: '',
         subject: '',
+        subjectCode: '',
         evaluator: '',
         numberOfStudents: '',
         paperSchema: ''
@@ -355,13 +369,7 @@ function CreateEvaluation() {
             <label className="block text-sm font-medium text-gray-700">Subject</label>
             <select
               value={formData.subject}
-              onChange={(e) => {
-                setFormData({
-                  ...formData, 
-                  subject: e.target.value,
-                  evaluator: '' // Reset evaluator when subject changes
-                });
-              }}
+              onChange={handleSubjectChange}
               className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-3 text-sm"
               required
               disabled={!formData.regulation || !formData.year || !formData.branch || !formData.semester}
@@ -451,6 +459,7 @@ function CreateEvaluation() {
                   branch: '',
                   semester: '',
                   subject: '',
+                  subjectCode: '',
                   evaluator: '',
                   numberOfStudents: '',
                   paperSchema: ''

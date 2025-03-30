@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
 import { MdArrowBack, MdDescription, MdClose } from 'react-icons/md';
+import Toast from './Toast';
 
 function PaperEvaluation() {
   const { evaluationId, submissionId } = useParams();
@@ -15,6 +16,8 @@ function PaperEvaluation() {
   const [answerPaperUrl, setAnswerPaperUrl] = useState(null);
   const [showQuestionPaper, setShowQuestionPaper] = useState(false);
   const [marks, setMarks] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
+  const [markErrors, setMarkErrors] = useState({});
 
   // First, add these styles at the top of your component
   const styles = {
@@ -79,10 +82,38 @@ function PaperEvaluation() {
     navigate(`/evaluator/evaluation/${evaluationId}`);
   };
 
-  const handleMarkChange = (questionNumber, value) => {
+  const handleMarkChange = (questionNumber, value, maxMarks) => {
+    // Convert value to number, but handle empty string case
+    const numValue = value === '' ? '' : Number(value);
+    
+    // Only validate if there's a value
+    if (value !== '') {
+      // Check if marks exceed maximum
+      if (numValue > maxMarks) {
+        setMarkErrors(prev => ({
+          ...prev,
+          [questionNumber]: `Maximum marks allowed is ${maxMarks}`
+        }));
+      } else {
+        setMarkErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[questionNumber];
+          return newErrors;
+        });
+      }
+    } else {
+      // Clear error if input is empty
+      setMarkErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[questionNumber];
+        return newErrors;
+      });
+    }
+
+    // Update marks state
     setMarks(prev => ({
       ...prev,
-      [questionNumber]: Number(value) || 0  // Convert to number or 0 if empty
+      [questionNumber]: numValue
     }));
   };
 
@@ -95,38 +126,89 @@ function PaperEvaluation() {
 
   const handleSubmitEvaluation = async () => {
     try {
-      // Get final marks by selecting maximum scoring sets
+      // Validate if marks are entered for all questions
+      const hasEmptyMarks = schema.questionSets.some((set) => {
+        return set.questions.some((q) => marks[q.questionNumber] === undefined);
+      });
+
+      if (hasEmptyMarks) {
+        alert('Please enter marks for all questions before submitting.');
+        return;
+      }
+
+      // Check if there are any mark errors
+      if (Object.keys(markErrors).length > 0) {
+        alert('Please correct the marks that exceed maximum allowed values.');
+        return;
+      }
+
+      // Get final marks by selecting maximum scoring sets for total
       const finalMarks = {};
+      let totalMarks = 0;
+
+      // Store all marks but calculate total only from highest scoring sets
       schema.questionSets.forEach((set, index) => {
         if (index % 2 === 0) {
           const choiceSet = schema.questionSets[index + 1];
-          const selectedSet = getMaxSetMarks(set.questions, choiceSet.questions) === 'main' ? 
-            set.questions : choiceSet.questions;
+          const mainSetTotal = set.questions.reduce((sum, q) => sum + (marks[q.questionNumber] || 0), 0);
+          const choiceSetTotal = choiceSet.questions.reduce((sum, q) => sum + (marks[q.questionNumber] || 0), 0);
           
-          selectedSet.forEach(q => {
-            if (marks[q.questionNumber]) {
+          // Add marks from both sets to finalMarks
+          set.questions.forEach(q => {
+            if (marks[q.questionNumber] !== undefined) {
               finalMarks[q.questionNumber] = marks[q.questionNumber];
             }
           });
+          
+          choiceSet.questions.forEach(q => {
+            if (marks[q.questionNumber] !== undefined) {
+              finalMarks[q.questionNumber] = marks[q.questionNumber];
+            }
+          });
+
+          // Add only the higher total to the totalMarks
+          totalMarks += Math.max(mainSetTotal, choiceSetTotal);
         }
       });
 
+      // Format question marks for database (include all marks)
       const questionMarks = Object.entries(finalMarks).map(([questionNumber, marks]) => ({
         questionNumber,
         marks
       }));
 
-      const totalMarks = Object.values(finalMarks).reduce((sum, mark) => sum + mark, 0);
+      const response = await axiosInstance.put(
+        `/api/evaluations/${evaluationId}/submissions/${submissionId}`,
+        {
+          status: 'Completed',
+          questionMarks,
+          totalMarks
+        }
+      );
 
-      await axiosInstance.put(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
-        questionMarks,
-        totalMarks,
-        status: 'Completed'
-      });
-
-      navigate(`/evaluator/evaluation/${evaluationId}`);
+      if (response.status === 200) {
+        setSuccessMessage('Evaluation submitted successfully!');
+        
+        // Navigate back after a short delay
+        setTimeout(() => {
+          navigate(`/evaluator/evaluation/${evaluationId}`);
+        }, 2000);
+      } else {
+        throw new Error('Failed to submit evaluation');
+      }
     } catch (error) {
       console.error('Error submitting evaluation:', error);
+      alert(error.response?.data?.message || 'Error submitting evaluation. Please try again.');
+    }
+  };
+
+  // Add a confirmation dialog before submission
+  const handleSubmitClick = () => {
+    const confirmed = window.confirm(
+      'Please ensure all marks are entered correctly before proceeding.'
+    );
+    if (confirmed) {
+      handleSubmitEvaluation();
     }
   };
 
@@ -158,6 +240,9 @@ function PaperEvaluation() {
 
   return (
     <div className="min-h-screen bg-[#EBF3FA]">
+      {/* Show Toast message if exists */}
+      {successMessage && <Toast message={successMessage} />}
+
       {/* Header */}
       <header className="bg-[#0C5A93] text-white shadow">
         <div className="px-4 py-3 flex items-center">
@@ -263,17 +348,28 @@ function PaperEvaluation() {
                                 <span className="font-medium w-6">
                                   {question.questionNumber}:
                                 </span>
-                                <input
-                                  type="number"
-                                  value={marks[question.questionNumber] || ''}
-                                  onChange={(e) => handleMarkChange(question.questionNumber, e.target.value)}
-                                  onWheel={disableNumberInputScrolling}
-                                  className="flex-1 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Marks"
-                                  min="0"
-                                  max={question.maxMarks}
-                                />
-                                <span className="text-sm text-gray-500">/{question.maxMarks}</span>
+                                <div className="flex-1">
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      value={marks[question.questionNumber] === undefined ? '' : marks[question.questionNumber]}
+                                      onChange={(e) => handleMarkChange(question.questionNumber, e.target.value, question.maxMarks)}
+                                      onWheel={disableNumberInputScrolling}
+                                      className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        markErrors[question.questionNumber] ? 'border-red-500' : 'border-gray-300'
+                                      }`}
+                                      placeholder="Marks"
+                                      min="0"
+                                      max={question.maxMarks}
+                                    />
+                                  </div>
+                                  {markErrors[question.questionNumber] && (
+                                    <div className="text-xs text-red-500 mt-1">
+                                      {markErrors[question.questionNumber]}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-sm text-gray-500 min-w-[30px]">/{question.maxMarks}</span>
                               </div>
                             ))}
                           </div>
@@ -282,17 +378,28 @@ function PaperEvaluation() {
                             <span className="font-medium w-6">
                               {set.questions[0].questionNumber}:
                             </span>
-                            <input
-                              type="number"
-                              value={marks[set.questions[0].questionNumber] || ''}
-                              onChange={(e) => handleMarkChange(set.questions[0].questionNumber, e.target.value)}
-                              onWheel={disableNumberInputScrolling}
-                              className="flex-1 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Marks"
-                              min="0"
-                              max={set.questions[0].maxMarks}
-                            />
-                            <span className="text-sm text-gray-500">/{set.questions[0].maxMarks}</span>
+                            <div className="flex-1">
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  value={marks[set.questions[0].questionNumber] === undefined ? '' : marks[set.questions[0].questionNumber]}
+                                  onChange={(e) => handleMarkChange(set.questions[0].questionNumber, e.target.value, set.questions[0].maxMarks)}
+                                  onWheel={disableNumberInputScrolling}
+                                  className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    markErrors[set.questions[0].questionNumber] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                  placeholder="Marks"
+                                  min="0"
+                                  max={set.questions[0].maxMarks}
+                                />
+                              </div>
+                              {markErrors[set.questions[0].questionNumber] && (
+                                <div className="text-xs text-red-500 mt-1">
+                                  {markErrors[set.questions[0].questionNumber]}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500 min-w-[30px]">/{set.questions[0].maxMarks}</span>
                           </div>
                         )}
                       </div>
@@ -317,7 +424,7 @@ function PaperEvaluation() {
                   </div>
 
                   <button
-                    onClick={handleSubmitEvaluation}
+                    onClick={handleSubmitClick}
                     className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
                     Submit Evaluation

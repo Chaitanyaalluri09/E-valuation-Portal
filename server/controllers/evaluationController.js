@@ -64,6 +64,7 @@ const evaluationController = {
         branch,
         semester,
         subject,
+        subjectCode,
         evaluator,
         numberOfStudents,
         endDate,
@@ -72,7 +73,7 @@ const evaluationController = {
       } = formData;
 
       // Validate required fields
-      if (!regulation || !year || !branch || !semester || !subject || !evaluator || !endDate || !registerNumbers || !paperSchema) {
+      if (!regulation || !year || !branch || !semester || !subject || !subjectCode || !evaluator || !endDate || !registerNumbers || !paperSchema) {
         return res.status(400).json({
           message: 'Missing required fields',
           receivedData: formData
@@ -116,6 +117,7 @@ const evaluationController = {
           branch,
           semester,
           subject,
+          subjectCode,
           evaluator,
           paperSchema,
           questionPaperUrl,
@@ -245,7 +247,14 @@ const evaluationController = {
   updateSubmissionStatus: async (req, res) => {
     try {
       const { evaluationId, submissionId } = req.params;
-      const { status } = req.body;
+      const { status, questionMarks, totalMarks } = req.body;
+
+      // Validate the input data
+      if (!status || !Array.isArray(questionMarks) || totalMarks === undefined) {
+        return res.status(400).json({
+          message: 'Invalid input data. Required fields: status, questionMarks array, and totalMarks'
+        });
+      }
 
       const evaluation = await Evaluation.findById(evaluationId);
       
@@ -259,10 +268,16 @@ const evaluationController = {
         return res.status(404).json({ message: 'Submission not found' });
       }
 
+      // Update submission details
       submission.status = status;
+      submission.questionMarks = questionMarks;
+      submission.totalMarks = totalMarks;
 
-      // Update evaluation status if a submission is marked as "In Progress"
-      if (status === 'In Progress' && evaluation.status === 'Not Started') {
+      // Check if all submissions are completed to update evaluation status
+      const allCompleted = evaluation.studentSubmissions.every(sub => sub.status === 'Completed');
+      if (allCompleted) {
+        evaluation.status = 'Completed';
+      } else if (evaluation.status === 'Not Started') {
         evaluation.status = 'In Progress';
       }
 
@@ -275,7 +290,10 @@ const evaluationController = {
       });
     } catch (error) {
       console.error('Error updating submission status:', error);
-      res.status(500).json({ message: 'Error updating submission status', error: error.message });
+      res.status(500).json({ 
+        message: 'Error updating submission status', 
+        error: error.message 
+      });
     }
   }
 };

@@ -37,6 +37,6 @@ router.get('/', verifyToken, isAdmin, evaluationController.getAllEvaluations);
 router.get('/:id', verifyToken, evaluationController.getEvaluation);
 router.put('/:id', verifyToken, evaluationController.updateEvaluation);
 router.delete('/:id', verifyToken, isAdmin, evaluationController.deleteEvaluation);
-router.patch('/:evaluationId/submissions/:submissionId', evaluationController.updateSubmissionStatus);
+router.put('/:evaluationId/submissions/:submissionId', verifyToken, isEvaluator, evaluationController.updateSubmissionStatus);
 
 module.exports = router; 
