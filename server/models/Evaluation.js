@@ -1,14 +1,8 @@
 const mongoose = require('mongoose');
 
-const studentSubmissionSchema = new mongoose.Schema({
-  registerNumber: {
-    type: String,
-    required: true
-  },
-  answerPaperUrl: {
-    type: String,
-    required: true
-  },
+const submissionSchema = new mongoose.Schema({
+  registerNumber: String,
+  answerPaperUrl: String,
   status: {
     type: String,
     enum: ['Not Started', 'In Progress', 'Completed'],
@@ -18,9 +12,10 @@ const studentSubmissionSchema = new mongoose.Schema({
     questionNumber: String,
     marks: Number
   }],
-  totalMarks: {
-    type: Number,
-    default: null
+  totalMarks: Number,
+  lastModified: {
+    type: Date,
+    default: Date.now
   }
 });
 
@@ -62,7 +57,7 @@ const evaluationSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  studentSubmissions: [studentSubmissionSchema],
+  studentSubmissions: [submissionSchema],
   createdAt: {
     type: Date,
     default: Date.now

@@ -18,6 +18,8 @@ function PaperEvaluation() {
   const [marks, setMarks] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [markErrors, setMarkErrors] = useState({});
+  const [savingStatus, setSavingStatus] = useState('');
+  const [saveToastMessage, setSaveToastMessage] = useState('');
 
   // First, add these styles at the top of your component
   const styles = {
@@ -37,6 +39,15 @@ function PaperEvaluation() {
           throw new Error('Submission not found');
         }
         setSubmission(sub);
+
+        // Load existing marks into state
+        if (sub.questionMarks && sub.questionMarks.length > 0) {
+          const existingMarks = {};
+          sub.questionMarks.forEach(mark => {
+            existingMarks[mark.questionNumber] = mark.marks;
+          });
+          setMarks(existingMarks);
+        }
 
         // Fetch paper schema
         const schemaResponse = await axiosInstance.get(`/api/paper-schemas/${response.data.paperSchema}`);
@@ -218,6 +229,43 @@ function PaperEvaluation() {
     e.target.blur();
   }
 
+  // Add new function to handle saving progress
+  const handleSaveProgress = async () => {
+    try {
+      setSavingStatus('Saving...');
+      
+      // Format question marks for database
+      const questionMarks = Object.entries(marks).map(([questionNumber, marks]) => ({
+        questionNumber,
+        marks
+      }));
+
+      const response = await axiosInstance.put(
+        `/api/evaluations/${evaluationId}/submissions/${submissionId}/save-progress`,
+        {
+          status: 'In Progress',
+          questionMarks
+        }
+      );
+
+      if (response.status === 200) {
+        setSaveToastMessage('Progress saved successfully!');
+        // Clear the toast message after 3 seconds
+        setTimeout(() => {
+          setSaveToastMessage('');
+        }, 3000);
+      } else {
+        throw new Error('Failed to save progress');
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      setSavingStatus('Failed to save');
+      setTimeout(() => {
+        setSavingStatus('');
+      }, 3000);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#EBF3FA] flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -240,8 +288,9 @@ function PaperEvaluation() {
 
   return (
     <div className="min-h-screen bg-[#EBF3FA]">
-      {/* Show Toast message if exists */}
+      {/* Show Toast messages if they exist */}
       {successMessage && <Toast message={successMessage} />}
+      {saveToastMessage && <Toast message={saveToastMessage} />}
 
       {/* Header */}
       <header className="bg-[#0C5A93] text-white shadow">
@@ -407,7 +456,7 @@ function PaperEvaluation() {
                   ))}
 
                   <div className="pt-4 border-t mt-4">
-                    <p className="text-lg font-semibold">
+                    <p className="text-lg font-semibold mb-4">
                       Total Marks: {
                         schema.questionSets.reduce((total, set, index) => {
                           if (index % 2 === 0) {
@@ -421,14 +470,26 @@ function PaperEvaluation() {
                       }
                       /{schema.totalMarks}
                     </p>
-                  </div>
 
-                  <button
-                    onClick={handleSubmitClick}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                  >
-                    Submit Evaluation
-                  </button>
+                    {/* Buttons container with flex row and justify-end */}
+                    <div className="flex justify-end gap-3">
+                      {/* Save Button */}
+                      <button
+                        onClick={handleSaveProgress}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium w-24"
+                      >
+                        Save
+                      </button>
+
+                      {/* Submit Button */}
+                      <button
+                        onClick={handleSubmitClick}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium w-24"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

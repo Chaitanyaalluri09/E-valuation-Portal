@@ -295,6 +295,50 @@ const evaluationController = {
         error: error.message 
       });
     }
+  },
+
+  // Update or save progress for a submission
+  saveSubmissionProgress: async (req, res) => {
+    try {
+      const { evaluationId, submissionId } = req.params;
+      const { status, questionMarks } = req.body;
+
+      const evaluation = await Evaluation.findById(evaluationId);
+      
+      if (!evaluation) {
+        return res.status(404).json({ message: 'Evaluation not found' });
+      }
+
+      // Find and update the specific submission
+      const submission = evaluation.studentSubmissions.id(submissionId);
+      if (!submission) {
+        return res.status(404).json({ message: 'Submission not found' });
+      }
+
+      // Update submission details
+      submission.status = status;
+      submission.questionMarks = questionMarks;
+      submission.lastModified = new Date();
+
+      // Update evaluation status if it's still "Not Started"
+      if (evaluation.status === 'Not Started') {
+        evaluation.status = 'In Progress';
+      }
+
+      await evaluation.save();
+
+      res.status(200).json({ 
+        message: 'Progress saved successfully', 
+        submission,
+        evaluationStatus: evaluation.status 
+      });
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      res.status(500).json({ 
+        message: 'Error saving progress', 
+        error: error.message 
+      });
+    }
   }
 };
 

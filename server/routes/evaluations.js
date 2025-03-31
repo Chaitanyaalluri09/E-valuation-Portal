@@ -38,5 +38,11 @@ router.get('/:id', verifyToken, evaluationController.getEvaluation);
 router.put('/:id', verifyToken, evaluationController.updateEvaluation);
 router.delete('/:id', verifyToken, isAdmin, evaluationController.deleteEvaluation);
 router.put('/:evaluationId/submissions/:submissionId', verifyToken, isEvaluator, evaluationController.updateSubmissionStatus);
+router.put(
+  '/:evaluationId/submissions/:submissionId/save-progress', 
+  verifyToken, 
+  isEvaluator, 
+  evaluationController.saveSubmissionProgress
+);
 
 module.exports = router; 
