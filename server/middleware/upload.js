@@ -1,4 +1,6 @@
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 // Use memory storage instead of disk storage since we're using S3
 const storage = multer.memoryStorage();
@@ -15,6 +17,27 @@ const upload = multer({
       cb(new Error('Only PDF files are allowed!'), false);
     }
   }
-});
+}).fields([
+  { name: 'questionPaper', maxCount: 1 },
+  { name: 'files', maxCount: 100 }
+]);
+
+// Clean up temporary files
+const cleanupTemp = () => {
+  const uploadsDir = path.join(__dirname, '../uploads');
+  if (fs.existsSync(uploadsDir)) {
+    fs.readdir(uploadsDir, (err, files) => {
+      if (err) console.error('Error reading uploads directory:', err);
+      for (const file of files) {
+        fs.unlink(path.join(uploadsDir, file), err => {
+          if (err) console.error('Error deleting temp file:', err);
+        });
+      }
+    });
+  }
+};
+
+// Run cleanup periodically
+setInterval(cleanupTemp, 1000 * 60 * 60); // Clean every hour
 
 module.exports = upload; 
