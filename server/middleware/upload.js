@@ -5,6 +5,7 @@ const path = require('path');
 // Use memory storage instead of disk storage since we're using S3
 const storage = multer.memoryStorage();
 
+// Create multer instance without field configuration
 const upload = multer({
   storage: storage,
   limits: {
@@ -17,10 +18,7 @@ const upload = multer({
       cb(new Error('Only PDF files are allowed!'), false);
     }
   }
-}).fields([
-  { name: 'questionPaper', maxCount: 1 },
-  { name: 'files', maxCount: 100 }
-]);
+});
 
 // Clean up temporary files
 const cleanupTemp = () => {

@@ -8,7 +8,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL?.split(',') || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -22,8 +22,7 @@ const requiredEnvVars = [
   'AWS_REGION',
   'AWS_BUCKET_NAME',
   'EMAIL_USER',
-  'EMAIL_APP_PASSWORD',
-  'FRONTEND_URL'
+  'EMAIL_APP_PASSWORD'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);

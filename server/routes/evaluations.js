@@ -1,14 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const evaluationController = require('../controllers/evaluationController');
 const { verifyToken, isAdmin, isEvaluator } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { getSignedUrl } = require('../utils/s3');
 
-const storage = multer.memoryStorage();
-const uploadMulter = multer({ storage });
-
+// Define file fields configuration
 const fileFields = [
   { name: 'questionPaper', maxCount: 1 },
   { name: 'files', maxCount: 100 }
