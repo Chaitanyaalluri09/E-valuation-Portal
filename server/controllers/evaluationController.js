@@ -90,7 +90,7 @@ const evaluationController = {
 
       // Get evaluator details first
       const evaluatorUser = await User.findById(evaluator);
-      const isFirstEvaluation = evaluatorUser.assignedPapers === 0;
+      const isFirstEvaluation = evaluatorUser.isFirstLogin;
 
       try {
         // Upload question paper to S3
@@ -128,12 +128,12 @@ const evaluationController = {
 
         await evaluation.save();
 
-        // Send email before updating assigned papers count
+        // Send email with different content based on isFirstLogin
         await sendEvaluationEmail(
           evaluatorUser,
           evaluation,
-          isFirstEvaluation,
-          isFirstEvaluation ? evaluatorUser.tempPassword : null
+          evaluatorUser.isFirstLogin,
+          evaluatorUser.isFirstLogin ? evaluatorUser.tempPassword : null
         );
 
         // Update evaluator's assigned papers count and add evaluation reference
