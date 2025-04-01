@@ -1,11 +1,7 @@
 import axios from 'axios';
 
-// Create a base URL without the proxy for direct API calls
-const API_URL = 'https://e-valuation-portal-backend.onrender.com';
-
-// Create the axios instance with the CORS proxy
 const axiosInstance = axios.create({
-  baseURL: 'https://corsproxy.io/?' + API_URL
+  baseURL: 'https://e-valuation-portal-backend.onrender.com'
 });
 
 axiosInstance.interceptors.request.use(
@@ -14,14 +10,6 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Fix URL encoding issues with the proxy
-    if (config.url && config.url.includes('?')) {
-      // For URLs with query parameters, ensure they're properly encoded for the proxy
-      const [path, query] = config.url.split('?');
-      config.url = path + '?' + encodeURIComponent('?' + query);
-    }
-    
     return config;
   },
   (error) => {

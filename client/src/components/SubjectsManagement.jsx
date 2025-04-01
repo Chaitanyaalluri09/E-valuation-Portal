@@ -114,12 +114,7 @@ function SubjectsManagement() {
       setAddingSubject(true);
       setSuccessMessage('');
       
-      const response = await axiosInstance.post('/api/subjects', newSubject);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add subject');
-      }
+      await axiosInstance.post('/api/subjects', newSubject);
 
       // Reset form
       setNewSubject({
@@ -151,11 +146,7 @@ function SubjectsManagement() {
 
   const handleDeleteSubject = async (subjectId) => {
     try {
-      const response = await axiosInstance.delete(`/api/subjects/${subjectId}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to delete subject');
-      }
+      await axiosInstance.delete(`/api/subjects/${subjectId}`);
 
       // Show success message
       setSuccessMessage('Subject deleted successfully');
@@ -186,14 +177,8 @@ function SubjectsManagement() {
     try {
       setLoading(true);
       const response = await axiosInstance.post('/api/subjects/upload-csv', formData);
-
-      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Error uploading CSV');
-      }
-
-      setSuccessMessage(`Successfully added ${data.addedCount} subjects`);
+      setSuccessMessage(`Successfully added ${response.data.addedCount} subjects`);
       setCsvFile(null);
       // Reset file input
       e.target.reset();
@@ -230,11 +215,7 @@ function SubjectsManagement() {
       
       const queryParams = new URLSearchParams(activeFilters).toString();
       
-      const response = await axiosInstance.delete(`/api/subjects?${queryParams}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to delete filtered subjects');
-      }
+      await axiosInstance.delete(`/api/subjects?${queryParams}`);
 
       setSuccessMessage('Filtered subjects deleted successfully');
       
@@ -270,11 +251,7 @@ function SubjectsManagement() {
       }
       try {
         const response = await axiosInstance.get(`/api/subjects/distinct/branch?regulation=${filters.regulation}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch distinct branches');
-        }
-        const branches = await response.json();
-        setDistinctBranches(branches);
+        setDistinctBranches(response.data);
       } catch (error) {
         setError(error.message);
       }
