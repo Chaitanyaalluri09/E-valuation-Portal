@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create();
+const axiosInstance = axios.create({
+  baseURL: 'https://e-valuation-portal-backend.onrender.com'
+});
 
 axiosInstance.interceptors.request.use(
   (config) => {
