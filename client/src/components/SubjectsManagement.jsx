@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Toast from './Toast';
+import axiosInstance from '../utils/axiosConfig';
 
 function SubjectsManagement() {
   const [subjects, setSubjects] = useState([]);
@@ -68,24 +69,19 @@ function SubjectsManagement() {
       const queryParams = new URLSearchParams(activeFilters).toString();
       console.log('Fetching with filters:', queryParams);
       
-      const response = await fetch(`/api/subjects?${queryParams}`);
+      const response = await axiosInstance.get(`/api/subjects?${queryParams}`);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch subjects');
-      }
+      console.log('Received subjects:', response.data);
       
-      const data = await response.json();
-      console.log('Received subjects:', data);
-      
-      if (Array.isArray(data)) {
-        setSubjects(data);
+      if (Array.isArray(response.data)) {
+        setSubjects(response.data);
       } else {
         setSubjects([]);
-        console.error('Received non-array data:', data);
+        console.error('Received non-array data:', response.data);
       }
     } catch (error) {
       console.error('Error fetching subjects:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to fetch subjects');
       setSubjects([]);
     } finally {
       setLoading(false);
@@ -95,23 +91,18 @@ function SubjectsManagement() {
   const fetchDistinctValues = useCallback(async () => {
     try {
       console.log('Fetching distinct values...');
+      
+      // Use axiosInstance for both requests
       const [regulationsRes, branchesRes] = await Promise.all([
-        fetch('/api/subjects/distinct/regulation'),
-        fetch('/api/subjects/distinct/branch')
+        axiosInstance.get('/api/subjects/distinct/regulation'),
+        axiosInstance.get('/api/subjects/distinct/branch')
       ]);
 
-      if (!regulationsRes.ok || !branchesRes.ok) {
-        throw new Error('Failed to fetch distinct values');
-      }
+      console.log('Distinct regulations:', regulationsRes.data);
+      console.log('Distinct branches:', branchesRes.data);
 
-      const regulations = await regulationsRes.json();
-      const branches = await branchesRes.json();
-
-      console.log('Distinct regulations:', regulations);
-      console.log('Distinct branches:', branches);
-
-      setDistinctRegulations(regulations);
-      setDistinctBranches(branches);
+      setDistinctRegulations(regulationsRes.data);
+      setDistinctBranches(branchesRes.data);
     } catch (error) {
       console.error('Error fetching distinct values:', error);
     }
@@ -123,13 +114,7 @@ function SubjectsManagement() {
       setAddingSubject(true);
       setSuccessMessage('');
       
-      const response = await fetch('/api/subjects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newSubject),
-      });
+      const response = await axiosInstance.post('/api/subjects', newSubject);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -166,9 +151,7 @@ function SubjectsManagement() {
 
   const handleDeleteSubject = async (subjectId) => {
     try {
-      const response = await fetch(`/api/subjects/${subjectId}`, {
-        method: 'DELETE'
-      });
+      const response = await axiosInstance.delete(`/api/subjects/${subjectId}`);
 
       if (!response.ok) {
         throw new Error('Failed to delete subject');
@@ -202,10 +185,7 @@ function SubjectsManagement() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/subjects/upload-csv', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await axiosInstance.post('/api/subjects/upload-csv', formData);
 
       const data = await response.json();
       
@@ -250,9 +230,7 @@ function SubjectsManagement() {
       
       const queryParams = new URLSearchParams(activeFilters).toString();
       
-      const response = await fetch(`/api/subjects?${queryParams}`, {
-        method: 'DELETE'
-      });
+      const response = await axiosInstance.delete(`/api/subjects?${queryParams}`);
 
       if (!response.ok) {
         throw new Error('Failed to delete filtered subjects');
@@ -291,7 +269,7 @@ function SubjectsManagement() {
         return;
       }
       try {
-        const response = await fetch(`/api/subjects/distinct/branch?regulation=${filters.regulation}`);
+        const response = await axiosInstance.get(`/api/subjects/distinct/branch?regulation=${filters.regulation}`);
         if (!response.ok) {
           throw new Error('Failed to fetch distinct branches');
         }

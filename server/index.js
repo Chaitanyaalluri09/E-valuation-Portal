@@ -8,10 +8,15 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL?.split(',') || 'http://localhost:3000',
-  credentials: true
+  origin: ['http://localhost:3000', 'https://e-valuation-portal-frontend.onrender.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Add this before your routes
+app.options('*', cors());
 
 // Add at the top after imports
 const requiredEnvVars = [
