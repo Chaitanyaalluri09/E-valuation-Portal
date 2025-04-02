@@ -1,7 +1,6 @@
 // src/pages/Login/LoginPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
 import Header from '../../components/Header/Header';
 import FirstLoginModal from '../../components/FirstLoginModal';
@@ -21,49 +20,59 @@ const LoginPage = () => {
   const [loginResponse, setLoginResponse] = useState(null);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleLogin = () => {
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError('Please enter email and password');
       return;
     }
 
     setIsLoading(true);
-
-    axiosInstance.post('/api/auth/login', {
+    
+    // Use XMLHttpRequest instead of axios to avoid any potential issues
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${axiosInstance.defaults.baseURL}/api/auth/login`, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    
+    xhr.onload = function() {
+      setIsLoading(false);
+      
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const response = JSON.parse(xhr.responseText);
+        setLoginResponse({ data: response });
+        
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userRole', response.user.role);
+        
+        if (response.user.isFirstLogin && response.user.role === 'evaluator') {
+          setUserId(response.user.id);
+          setShowFirstLoginModal(true);
+        } else {
+          if (response.user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/evaluator/dashboard');
+          }
+        }
+      } else {
+        try {
+          const errorResponse = JSON.parse(xhr.responseText);
+          setError(errorResponse.message || 'Login failed. Please try again.');
+        } catch (e) {
+          setError('Login failed. Please try again.');
+        }
+      }
+    };
+    
+    xhr.onerror = function() {
+      setIsLoading(false);
+      setError('Network error. Please try again.');
+    };
+    
+    xhr.send(JSON.stringify({
       email,
       password,
       userType
-    })
-    .then(response => {
-      setError('');
-      setLoginResponse(response);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('userRole', response.data.user.role);
-
-      if (response.data.user.isFirstLogin && response.data.user.role === 'evaluator') {
-        setUserId(response.data.user.id);
-        setShowFirstLoginModal(true);
-      } else {
-        if (response.data.user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/evaluator/dashboard');
-        }
-      }
-    })
-    .catch(err => {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
-      setError(errorMessage);
-      setPassword('');
-    })
-    .finally(() => {
-      setIsLoading(false);
-    });
-
-    return false;
+    }));
   };
 
   const handleEmailChange = (e) => {
@@ -88,10 +97,7 @@ const LoginPage = () => {
       <div className="px-1 sm:px-4">
         <div className="w-[85%] sm:max-w-sm mx-auto mt-4 sm:mt-10 p-3 sm:p-6 bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg">
           {error && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded text-xs sm:text-sm flex items-center">
-              <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 text-red-700 rounded text-xs sm:text-sm">
               {error}
             </div>
           )}
@@ -147,11 +153,7 @@ const LoginPage = () => {
             </button>
           </div>
 
-          <form 
-            onSubmit={handleSubmit} 
-            className="space-y-4 sm:space-y-5"
-            noValidate
-          >
+          <div className="space-y-4 sm:space-y-5">
             <div>
               <label 
                 htmlFor="email"
@@ -165,7 +167,6 @@ const LoginPage = () => {
                 value={email}
                 onChange={handleEmailChange}
                 className="w-full px-3 sm:px-4 py-1.5 sm:py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
-                required
                 placeholder="Enter your email"
               />
             </div>
@@ -190,8 +191,13 @@ const LoginPage = () => {
                     }
                   }}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  required
                   placeholder="Enter your password"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLogin();
+                    }
+                  }}
                 />
                 {isPasswordFocused && (
                   <button
@@ -226,7 +232,7 @@ const LoginPage = () => {
 
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={handleLogin}
               disabled={isLoading}
               className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors duration-200 flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
@@ -242,7 +248,7 @@ const LoginPage = () => {
                 'Login'
               )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
 
