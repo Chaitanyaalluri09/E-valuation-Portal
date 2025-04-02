@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import axiosInstance from '../../utils/axiosConfig';
 import Header from '../../components/Header/Header';
 import FirstLoginModal from '../../components/FirstLoginModal';
 
@@ -23,7 +24,7 @@ const LoginPage = () => {
     setError('');
     setIsLoading(true);
     try {
-      const response = await axios.post('https://e-valuation-portal-backend.onrender.com/api/auth/login', {
+      const response = await axiosInstance.post('/api/auth/login', {
         email,
         password,
         userType

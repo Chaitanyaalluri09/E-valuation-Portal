@@ -305,34 +305,41 @@ function PaperSchemaManagement() {
         </div>
       )}
 
-      {/* Schema List */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {schemas.map(schema => (
-          <div key={schema._id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">{schema.name}</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(schema)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <MdEdit size={20} />
-                </button>
-                <button
-                  onClick={() => handleDelete(schema._id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <MdDelete size={20} />
-                </button>
+      {/* Schema List with Empty State */}
+      {schemas.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <p className="text-gray-600 text-lg">No paper schemas found.</p>
+          <p className="text-gray-500 mt-2">Click the 'Create New Schema' button to add one.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {schemas.map(schema => (
+            <div key={schema._id} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">{schema.name}</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(schema)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <MdEdit size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(schema._id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <MdDelete size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="text-gray-600">
+                <p>Total Sets: {schema.totalSets}</p>
+                <p>Total Marks: {schema.totalMarks}</p>
               </div>
             </div>
-            <div className="text-gray-600">
-              <p>Total Sets: {schema.totalSets}</p>
-              <p>Total Marks: {schema.totalMarks}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <style>
         {`

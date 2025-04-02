@@ -4,7 +4,6 @@
   "description": "A Node.js server for an evaluation portal project",
   "main": "index.js",
   "scripts": {
-    "prestart": "npm install",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

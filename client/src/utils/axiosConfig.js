@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const baseURL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:5000'
+  : 'https://e-valuation-portal-backend.onrender.com';
+
 const axiosInstance = axios.create({
-  baseURL: 'https://e-valuation-portal-backend.onrender.com'
+  baseURL
 });
 
 axiosInstance.interceptors.request.use(

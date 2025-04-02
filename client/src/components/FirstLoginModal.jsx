@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 function FirstLoginModal({ userId, onPasswordChange }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -16,7 +16,7 @@ function FirstLoginModal({ userId, onPasswordChange }) {
     }
 
     try {
-      await axios.post('/api/auth/change-password', {
+      await axiosInstance.post('/api/auth/change-password', {
         currentPassword,
         newPassword,
         userId
