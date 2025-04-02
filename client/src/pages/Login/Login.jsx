@@ -5,6 +5,7 @@ import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
 import Header from '../../components/Header/Header';
 import FirstLoginModal from '../../components/FirstLoginModal';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,21 +19,27 @@ const LoginPage = () => {
   const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
   const [userId, setUserId] = useState(null);
   const [loginResponse, setLoginResponse] = useState(null);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
+    e.stopPropagation();
+    
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setIsLoading(true);
-    try {
-      const response = await axiosInstance.post('/api/auth/login', {
-        email,
-        password,
-        userType
-      });
 
+    axiosInstance.post('/api/auth/login', {
+      email,
+      password,
+      userType
+    })
+    .then(response => {
+      setError('');
       setLoginResponse(response);
-
-      // Store token immediately after successful login
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('userRole', response.data.user.role);
 
@@ -46,11 +53,25 @@ const LoginPage = () => {
           navigate('/evaluator/dashboard');
         }
       }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
+    })
+    .catch(err => {
+      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      setPassword('');
+    })
+    .finally(() => {
       setIsLoading(false);
-    }
+    });
+
+    return false;
+  };
+
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordInputChange = (e) => {
+    setPassword(e.target.value);
   };
 
   const handlePasswordChange = () => {
@@ -67,7 +88,10 @@ const LoginPage = () => {
       <div className="px-1 sm:px-4">
         <div className="w-[85%] sm:max-w-sm mx-auto mt-4 sm:mt-10 p-3 sm:p-6 bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg">
           {error && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 text-red-700 rounded text-xs sm:text-sm">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded text-xs sm:text-sm flex items-center">
+              <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
               {error}
             </div>
           )}
@@ -123,7 +147,11 @@ const LoginPage = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-4 sm:space-y-5"
+            noValidate
+          >
             <div>
               <label 
                 htmlFor="email"
@@ -135,7 +163,7 @@ const LoginPage = () => {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 className="w-full px-3 sm:px-4 py-1.5 sm:py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm"
                 required
                 placeholder="Enter your email"
@@ -154,7 +182,7 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordInputChange}
                   onFocus={() => setIsPasswordFocused(true)}
                   onBlur={(e) => {
                     if (!e.relatedTarget) {
@@ -185,10 +213,20 @@ const LoginPage = () => {
                   </button>
                 )}
               </div>
+              <div className="mt-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </div>
 
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isLoading}
               className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors duration-200 flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
@@ -212,6 +250,13 @@ const LoginPage = () => {
         <FirstLoginModal 
           userId={userId} 
           onPasswordChange={handlePasswordChange} 
+        />
+      )}
+
+      {showForgotPasswordModal && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPasswordModal(false)}
+          userType={userType}
         />
       )}
     </div>

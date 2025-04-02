@@ -42,7 +42,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  tempPassword: String
+  tempPassword: String,
+  resetPasswordOTP: {
+    type: String,
+  },
+  resetPasswordExpiry: {
+    type: Date,
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);
