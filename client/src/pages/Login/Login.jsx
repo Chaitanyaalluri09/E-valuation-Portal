@@ -20,59 +20,55 @@ const LoginPage = () => {
   const [loginResponse, setLoginResponse] = useState(null);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  const handleLogin = () => {
+  console.log('API URL:', axiosInstance.defaults.baseURL);
+
+  const handleLogin = async () => {
     if (!email || !password) {
       setError('Please enter email and password');
       return;
     }
 
     setIsLoading(true);
-    
-    // Use XMLHttpRequest instead of axios to avoid any potential issues
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${axiosInstance.defaults.baseURL}/api/auth/login`, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    
-    xhr.onload = function() {
-      setIsLoading(false);
+    setError('');
+
+    try {
+      const response = await axiosInstance.post('/api/auth/login', {
+        email,
+        password,
+        userType
+      });
+
+      const { data } = response;
+      setLoginResponse({ data });
       
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const response = JSON.parse(xhr.responseText);
-        setLoginResponse({ data: response });
-        
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('userRole', response.user.role);
-        
-        if (response.user.isFirstLogin && response.user.role === 'evaluator') {
-          setUserId(response.user.id);
-          setShowFirstLoginModal(true);
-        } else {
-          if (response.user.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/evaluator/dashboard');
-          }
-        }
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', data.user.role);
+      
+      if (data.user.isFirstLogin && data.user.role === 'evaluator') {
+        setUserId(data.user.id);
+        setShowFirstLoginModal(true);
       } else {
-        try {
-          const errorResponse = JSON.parse(xhr.responseText);
-          setError(errorResponse.message || 'Login failed. Please try again.');
-        } catch (e) {
-          setError('Login failed. Please try again.');
+        if (data.user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/evaluator/dashboard');
         }
       }
-    };
-    
-    xhr.onerror = function() {
+    } catch (error) {
+      console.error('Login Error:', error);
+      if (error.response) {
+        // Server responded with an error status code
+        setError(error.response.data.message || 'Login failed. Please try again.');
+      } else if (error.request) {
+        // Request was made but no response received
+        setError('No response from server. Please check your connection.');
+      } else {
+        // Something else happened while setting up the request
+        setError('Login failed. Please try again.');
+      }
+    } finally {
       setIsLoading(false);
-      setError('Network error. Please try again.');
-    };
-    
-    xhr.send(JSON.stringify({
-      email,
-      password,
-      userType
-    }));
+    }
   };
 
   const handleEmailChange = (e) => {
