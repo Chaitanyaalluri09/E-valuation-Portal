@@ -102,6 +102,19 @@ const userController = {
     } catch (error) {
       res.status(500).json({ message: 'Error fetching subjects' });
     }
+  },
+
+  // Get evaluators
+  getEvaluators: async (req, res) => {
+    try {
+      const evaluators = await User.find({ role: 'evaluator' })
+        .select('username _id')
+        .sort({ username: 1 });
+      res.json(evaluators);
+    } catch (error) {
+      console.error('Error fetching evaluators:', error);
+      res.status(500).json({ message: 'Error fetching evaluators' });
+    }
   }
 };
 

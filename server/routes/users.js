@@ -277,4 +277,6 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+router.get('/evaluators', verifyToken, isAdmin, userController.getEvaluators);
+
 module.exports = router; 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axiosInstance from '../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
-import { MdDashboard, MdAccountCircle } from 'react-icons/md';
+import { MdDashboard, MdAccountCircle, MdFilterList } from 'react-icons/md';
 import AccountSettings from './AccountSettings';
 
 function EvaluatorDashboard() {
@@ -12,6 +12,8 @@ function EvaluatorDashboard() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'settings'
+  const [statusFilter, setStatusFilter] = useState('All');
+  const filterOptions = ['All', 'Not Started', 'In Progress', 'Completed'];
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -49,6 +51,11 @@ function EvaluatorDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFilteredEvaluations = () => {
+    if (statusFilter === 'All') return evaluations;
+    return evaluations.filter(evaluation => evaluation.status === statusFilter);
   };
 
   const handleLogout = () => {
@@ -165,22 +172,42 @@ function EvaluatorDashboard() {
         <main className="p-8">
           {currentView === 'dashboard' ? (
             <>
-              <div className="mb-6">
+              <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-semibold text-gray-900">Evaluations Dashboard</h1>
+                
+                {/* Filter Section */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <MdFilterList className="text-gray-600" />
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C5A93]"
+                    >
+                      {filterOptions.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
                   {error}
                 </div>
-              ) : evaluations.length === 0 ? (
+              ) : getFilteredEvaluations().length === 0 ? (
                 <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                  <h3 className="text-lg font-medium text-gray-900">No Evaluations Assigned</h3>
-                  <p className="mt-2 text-gray-600">You currently have no evaluations assigned to you.</p>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {evaluations.length === 0 ? 'No Evaluations Assigned' : 'No evaluations match the selected filter'}
+                  </h3>
+                  <p className="mt-2 text-gray-600">
+                    {evaluations.length === 0 ? 'You currently have no evaluations assigned to you.' : 'Try changing the filter to see more evaluations.'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {evaluations.map((evaluation) => {
+                  {getFilteredEvaluations().map((evaluation) => {
                     const notStartedPapers = evaluation.studentSubmissions.filter(
                       sub => sub.status === 'Not Started'
                     ).length;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axiosConfig';
-import { MdAssignment, MdDownload } from 'react-icons/md';
+import { MdAssignment, MdDownload, MdFilterList } from 'react-icons/md';
 import Toast from './Toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +11,10 @@ function Dashboard() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showResults, setShowResults] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('All');
   const navigate = useNavigate();
+
+  const filterOptions = ['All', 'Not Started', 'In Progress', 'Completed'];
 
   const fetchEvaluations = async () => {
     try {
@@ -105,6 +108,11 @@ function Dashboard() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+  };
+
+  const getFilteredEvaluations = () => {
+    if (statusFilter === 'All') return evaluations;
+    return evaluations.filter(evaluation => evaluation.status === statusFilter);
   };
 
   const ResultsModal = ({ evaluation, onClose }) => {
@@ -203,22 +211,44 @@ function Dashboard() {
         />
       )}
 
-      <h2 className="text-2xl font-bold mb-6">Evaluations Dashboard</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Evaluations Dashboard</h2>
+        
+        {/* Filter Section */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <MdFilterList className="text-gray-600" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C5A93]"
+            >
+              {filterOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
-      {evaluations.length === 0 ? (
+      {getFilteredEvaluations().length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md">
-          <div className="text-gray-600 text-lg mb-4">No evaluations found</div>
-          <button
-            onClick={() => document.querySelector('[data-menu="create-evaluation"]').click()}
-            className="flex items-center gap-2 bg-[#0C5A93] text-white px-6 py-3 rounded-lg hover:bg-[#094875] transition-colors"
-          >
-            <MdAssignment className="text-xl" />
-            Create Evaluation
-          </button>
+          <div className="text-gray-600 text-lg mb-4">
+            {evaluations.length === 0 ? 'No evaluations found' : 'No evaluations match the selected filter'}
+          </div>
+          {evaluations.length === 0 && (
+            <button
+              onClick={() => document.querySelector('[data-menu="create-evaluation"]').click()}
+              className="flex items-center gap-2 bg-[#0C5A93] text-white px-6 py-3 rounded-lg hover:bg-[#094875] transition-colors"
+            >
+              <MdAssignment className="text-xl" />
+              Create Evaluation
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {evaluations.map((evaluation) => {
+          {getFilteredEvaluations().map((evaluation) => {
             const correctedPapers = evaluation.studentSubmissions.filter(
               sub => sub.status === 'evaluated' || sub.status === 'reviewed'
             ).length;
