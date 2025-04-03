@@ -48,6 +48,15 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordExpiry: {
     type: Date,
+  },
+  emailUpdateOTP: {
+    type: String,
+  },
+  emailUpdateExpiry: {
+    type: Date,
+  },
+  pendingEmail: {
+    type: String,
   }
 });
 

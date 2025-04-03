@@ -23,7 +23,7 @@ function SubjectsManagement() {
     subjectCode: '',
     subjectName: ''
   });
-  const [successMessage, setSuccessMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [currentPage, setCurrentPage] = useState(1);
   const [subjectsPerPage] = useState(5);
   const [csvFile, setCsvFile] = useState(null);
@@ -112,7 +112,7 @@ function SubjectsManagement() {
     e.preventDefault();
     try {
       setAddingSubject(true);
-      setSuccessMessage('');
+      setToast({ show: false, message: '', type: 'success' });
       
       await axiosInstance.post('/api/subjects', newSubject);
 
@@ -127,18 +127,22 @@ function SubjectsManagement() {
       });
 
       // Show success message
-      setSuccessMessage('Subject added successfully');
+      setToast({ show: true, message: 'Subject added successfully', type: 'success' });
 
       // Refresh both subjects list and distinct values
       await Promise.all([fetchSubjects(), fetchDistinctValues()]);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setSuccessMessage('');
+        setToast(prev => ({ ...prev, show: false }));
       }, 3000);
     } catch (error) {
       console.error('Error adding subject:', error);
-      alert(error.message || 'Error adding subject');
+      setToast({ 
+        show: true, 
+        message: error.message || 'Error adding subject', 
+        type: 'error' 
+      });
     } finally {
       setAddingSubject(false);
     }
@@ -149,18 +153,22 @@ function SubjectsManagement() {
       await axiosInstance.delete(`/api/subjects/${subjectId}`);
 
       // Show success message
-      setSuccessMessage('Subject deleted successfully');
+      setToast({ show: true, message: 'Subject deleted successfully', type: 'success' });
 
       // Refresh both subjects list and distinct values
       await Promise.all([fetchSubjects(), fetchDistinctValues()]);
 
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setSuccessMessage('');
+        setToast(prev => ({ ...prev, show: false }));
       }, 3000);
     } catch (error) {
       console.error('Error deleting subject:', error);
-      alert(error.message || 'Error deleting subject');
+      setToast({ 
+        show: true, 
+        message: error.message || 'Error deleting subject', 
+        type: 'error' 
+      });
     }
   };
 
@@ -178,7 +186,11 @@ function SubjectsManagement() {
       setLoading(true);
       const response = await axiosInstance.post('/api/subjects/upload-csv', formData);
       
-      setSuccessMessage(`Successfully added ${response.data.addedCount} subjects`);
+      setToast({ 
+        show: true, 
+        message: `Successfully added ${response.data.addedCount} subjects`, 
+        type: 'success' 
+      });
       setCsvFile(null);
       // Reset file input
       e.target.reset();
@@ -188,11 +200,16 @@ function SubjectsManagement() {
     } catch (error) {
       console.error('Error uploading CSV:', error);
       setError(error.message);
+      setToast({ 
+        show: true, 
+        message: error.message || 'Error uploading CSV', 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setSuccessMessage('');
+        setToast(prev => ({ ...prev, show: false }));
       }, 3000);
     }
   };
@@ -217,7 +234,7 @@ function SubjectsManagement() {
       
       await axiosInstance.delete(`/api/subjects?${queryParams}`);
 
-      setSuccessMessage('Filtered subjects deleted successfully');
+      setToast({ show: true, message: 'Filtered subjects deleted successfully', type: 'success' });
       
       // Refresh both subjects list and distinct values
       await Promise.all([fetchSubjects(), fetchDistinctValues()]);
@@ -230,12 +247,20 @@ function SubjectsManagement() {
       }));
 
       setTimeout(() => {
-        setSuccessMessage('');
+        setToast(prev => ({ ...prev, show: false }));
       }, 3000);
     } catch (error) {
       console.error('Error deleting filtered subjects:', error);
-      alert(error.message || 'Error deleting filtered subjects');
+      setToast({ 
+        show: true, 
+        message: error.message || 'Error deleting filtered subjects', 
+        type: 'error' 
+      });
     }
+  };
+
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
   };
 
   useEffect(() => {
@@ -264,7 +289,14 @@ function SubjectsManagement() {
       <h2 className="text-2xl font-bold">Subjects Management</h2>
       
       {/* Success Message */}
-      {successMessage && <Toast message={successMessage} />}
+      {toast.show && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={closeToast}
+          duration={3000}
+        />
+      )}
       
       {/* Add New Subject Form */}
       <div className="bg-white p-4 rounded-lg shadow space-y-4">

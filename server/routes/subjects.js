@@ -157,4 +157,14 @@ router.post('/upload-csv', upload.single('file'), async (req, res) => {
   }
 });
 
+// Add this new route to get distinct subject names
+router.get('/distinct/subjectName', async (req, res) => {
+  try {
+    const distinctSubjectNames = await Subject.distinct('subjectName');
+    res.json(distinctSubjectNames);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching distinct subject names' });
+  }
+});
+
 module.exports = router; 

@@ -23,7 +23,7 @@ function CreateEvaluation() {
   const [questionPaper, setQuestionPaper] = useState(null);
   const [endDate, setEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [paperSchemas, setPaperSchemas] = useState([]);
 
   useEffect(() => {
@@ -171,10 +171,13 @@ function CreateEvaluation() {
     });
   };
 
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSuccessMessage(''); // Clear any existing message
 
     try {
       const submitFormData = new FormData();
@@ -205,7 +208,12 @@ function CreateEvaluation() {
         },
       });
 
-      setSuccessMessage('Evaluation created successfully!');
+      setToast({
+        show: true,
+        message: 'Evaluation created successfully!',
+        type: 'success',
+        duration: 3000
+      });
       
       // Reset form
       setFormData({
@@ -230,14 +238,14 @@ function CreateEvaluation() {
         input.value = '';
       });
 
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
-
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      alert(error.response?.data?.message || 'Error creating evaluation');
+      setToast({
+        show: true,
+        message: error.response?.data?.message || 'Error creating evaluation',
+        type: 'error',
+        duration: 3000
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -245,7 +253,14 @@ function CreateEvaluation() {
 
   return (
     <div className="min-h-screen bg-[#E3F2FD] py-1">
-      {successMessage && <Toast message={successMessage} />}
+      {toast.show && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={closeToast}
+        />
+      )}
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-6">Create Evaluation</h2>
         <form onSubmit={handleSubmit} encType="multipart/form-data">

@@ -8,7 +8,7 @@ function Dashboard() {
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showResults, setShowResults] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const navigate = useNavigate();
@@ -29,6 +29,10 @@ function Dashboard() {
     fetchEvaluations();
   }, []);
 
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
+  };
+
   const handleDelete = async (evaluationId) => {
     if (!window.confirm('Are you sure you want to delete this evaluation?')) {
       return;
@@ -36,16 +40,21 @@ function Dashboard() {
 
     try {
       await axiosInstance.delete(`/api/evaluations/${evaluationId}`);
+      setToast({
+        show: true,
+        message: 'Evaluation deleted successfully',
+        type: 'success',
+        duration: 3000
+      });
       fetchEvaluations(); // Refresh the list
-      setSuccessMessage('Evaluation deleted successfully');
-      
-      // Clear the success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
     } catch (error) {
       console.error('Error deleting evaluation:', error);
-      alert('Failed to delete evaluation');
+      setToast({
+        show: true,
+        message: 'Failed to delete evaluation',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -185,7 +194,14 @@ function Dashboard() {
   return (
     <div className="p-4">
       {/* Success Message Toast */}
-      {successMessage && <Toast message={successMessage} />}
+      {toast.show && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={closeToast}
+        />
+      )}
 
       <h2 className="text-2xl font-bold mb-6">Evaluations Dashboard</h2>
 

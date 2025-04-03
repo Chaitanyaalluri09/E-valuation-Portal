@@ -16,10 +16,9 @@ function PaperEvaluation() {
   const [answerPaperUrl, setAnswerPaperUrl] = useState(null);
   const [showQuestionPaper, setShowQuestionPaper] = useState(false);
   const [marks, setMarks] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [markErrors, setMarkErrors] = useState({});
   const [savingStatus, setSavingStatus] = useState('');
-  const [saveToastMessage, setSaveToastMessage] = useState('');
 
   // First, add these styles at the top of your component
   const styles = {
@@ -198,7 +197,12 @@ function PaperEvaluation() {
       );
 
       if (response.status === 200) {
-        setSuccessMessage('Evaluation submitted successfully!');
+        setToast({
+          show: true,
+          message: 'Evaluation submitted successfully',
+          type: 'success',
+          duration: 2000
+        });
         
         // Navigate back after a short delay
         setTimeout(() => {
@@ -209,7 +213,12 @@ function PaperEvaluation() {
       }
     } catch (error) {
       console.error('Error submitting evaluation:', error);
-      alert(error.response?.data?.message || 'Error submitting evaluation. Please try again.');
+      setToast({
+        show: true,
+        message: error.response?.data?.message || 'Failed to submit evaluation',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -249,11 +258,12 @@ function PaperEvaluation() {
       );
 
       if (response.status === 200) {
-        setSaveToastMessage('Progress saved successfully!');
-        // Clear the toast message after 3 seconds
-        setTimeout(() => {
-          setSaveToastMessage('');
-        }, 3000);
+        setToast({
+          show: true,
+          message: 'Progress saved successfully',
+          type: 'success',
+          duration: 2000
+        });
       } else {
         throw new Error('Failed to save progress');
       }
@@ -263,7 +273,17 @@ function PaperEvaluation() {
       setTimeout(() => {
         setSavingStatus('');
       }, 3000);
+      setToast({
+        show: true,
+        message: 'Failed to save progress',
+        type: 'error',
+        duration: 3000
+      });
     }
+  };
+
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
   };
 
   if (loading) return (
@@ -289,8 +309,14 @@ function PaperEvaluation() {
   return (
     <div className="min-h-screen bg-[#EBF3FA]">
       {/* Show Toast messages if they exist */}
-      {successMessage && <Toast message={successMessage} />}
-      {saveToastMessage && <Toast message={saveToastMessage} />}
+      {toast.show && (
+        <Toast 
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={closeToast}
+        />
+      )}
 
       {/* Header */}
       <header className="bg-[#0C5A93] text-white shadow">

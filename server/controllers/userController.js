@@ -22,7 +22,8 @@ const userController = {
       res.json({
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        subjects: user.subjects || []
       });
     } catch (error) {
       res.status(500).json({ message: 'Error fetching user' });
