@@ -10,25 +10,33 @@ const transporter = require('../utils/emailTransporter');
 
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login attempt received:', { 
+      email: req.body.email, 
+      userType: req.body.userType 
+    });
+    
     const { email, password, userType } = req.body;
     
     const user = await User.findOne({ email, role: userType });
     if (!user) {
+      console.log('User not found');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password mismatch');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
+    console.log('Login successful for user:', user._id);
+    
     res.json({ 
       token,
       user: {
@@ -38,6 +46,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Error logging in' });
   }
 });
