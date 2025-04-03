@@ -20,8 +20,6 @@ const LoginPage = () => {
   const [loginResponse, setLoginResponse] = useState(null);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  console.log('API URL:', axiosInstance.defaults.baseURL);
-
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Please enter email and password');
@@ -55,15 +53,11 @@ const LoginPage = () => {
         }
       }
     } catch (error) {
-      console.error('Login Error:', error);
       if (error.response) {
-        // Server responded with an error status code
         setError(error.response.data.message || 'Login failed. Please try again.');
       } else if (error.request) {
-        // Request was made but no response received
         setError('No response from server. Please check your connection.');
       } else {
-        // Something else happened while setting up the request
         setError('Login failed. Please try again.');
       }
     } finally {
