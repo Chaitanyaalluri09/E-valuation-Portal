@@ -20,14 +20,19 @@ const LoginPage = () => {
   const [loginResponse, setLoginResponse] = useState(null);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    // Clear previous errors
+    setError('');
+
+    // Validate inputs
     if (!email || !password) {
       setError('Please enter email and password');
       return;
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
       const response = await axiosInstance.post('/api/auth/login', {
@@ -37,29 +42,34 @@ const LoginPage = () => {
       });
 
       const { data } = response;
-      setLoginResponse({ data });
       
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userRole', data.user.role);
-      
-      if (data.user.isFirstLogin && data.user.role === 'evaluator') {
-        setUserId(data.user.id);
-        setShowFirstLoginModal(true);
-      } else {
-        if (data.user.role === 'admin') {
-          navigate('/admin/dashboard');
+      // Only proceed with navigation if we have valid data
+      if (data && data.token) {
+        setLoginResponse({ data });
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userRole', data.user.role);
+        
+        if (data.user.isFirstLogin && data.user.role === 'evaluator') {
+          setUserId(data.user.id);
+          setShowFirstLoginModal(true);
         } else {
-          navigate('/evaluator/dashboard');
+          if (data.user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/evaluator/dashboard');
+          }
         }
       }
     } catch (error) {
-      if (error.response) {
-        setError(error.response.data.message || 'Login failed. Please try again.');
-      } else if (error.request) {
-        setError('No response from server. Please check your connection.');
+      console.error('Login error:', error);
+      // Handle the error without any navigation
+      if (error.response?.status === 401) {
+        setError('Invalid credentials');
       } else {
-        setError('Login failed. Please try again.');
+        setError(error.response?.data?.message || 'Login failed. Please try again.');
       }
+      // Clear sensitive data on error
+      setPassword('');
     } finally {
       setIsLoading(false);
     }
@@ -86,6 +96,7 @@ const LoginPage = () => {
       
       <div className="px-1 sm:px-4">
         <div className="w-[85%] sm:max-w-sm mx-auto mt-4 sm:mt-10 p-3 sm:p-6 bg-white rounded-lg sm:rounded-xl shadow-md sm:shadow-lg">
+          {/* Error message outside the form */}
           {error && (
             <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-100 text-red-700 rounded text-xs sm:text-sm">
               {error}
@@ -143,7 +154,7 @@ const LoginPage = () => {
             </button>
           </div>
 
-          <div className="space-y-4 sm:space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
             <div>
               <label 
                 htmlFor="email"
@@ -182,12 +193,6 @@ const LoginPage = () => {
                   }}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
                   placeholder="Enter your password"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleLogin();
-                    }
-                  }}
                 />
                 {isPasswordFocused && (
                   <button
@@ -221,8 +226,7 @@ const LoginPage = () => {
             </div>
 
             <button
-              type="button"
-              onClick={handleLogin}
+              type="submit"
               disabled={isLoading}
               className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors duration-200 flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
@@ -238,7 +242,7 @@ const LoginPage = () => {
                 'Login'
               )}
             </button>
-          </div>
+          </form>
         </div>
       </div>
 

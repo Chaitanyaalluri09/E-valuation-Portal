@@ -4,6 +4,9 @@ const axiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   timeout: 10000,
   withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add a request interceptor
@@ -23,16 +26,12 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (!error.response) {
-      console.error('Network Error:', error);
-      return Promise.reject(new Error('Network error - please check your connection'));
+    // Don't redirect on auth errors
+    if (error.response?.status === 401) {
+      return Promise.reject(error);
     }
     
-    if (error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      window.location.href = '/';
-    }
+    // Handle other errors
     return Promise.reject(error);
   }
 );
