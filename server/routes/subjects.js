@@ -81,78 +81,106 @@ router.get('/filter', async (req, res) => {
   }
 });
 
-// Add this new route for CSV upload
+// Update the CSV upload route
 router.post('/upload-csv', upload.single('file'), async (req, res) => {
+  // Check if file exists
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
+  // Check file type
+  if (!req.file.originalname.endsWith('.csv')) {
+    // Clean up - delete uploaded file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Error deleting file:', err);
+    });
+    return res.status(400).json({ message: 'Only CSV files are allowed' });
+  }
+
   const results = [];
   let addedCount = 0;
+  let totalRows = 0;
 
   try {
-    fs.createReadStream(req.file.path)
-      .pipe(csv.parse({ 
-        columns: true, 
-        trim: true,
-        skipEmptyLines: true 
-      }))
-      .on('data', (data) => {
-        // Clean and map the data
-        const cleanedData = {
-          regulation: data.regulation?.trim(),
-          year: data.year?.trim(),
-          branch: data.branch?.trim(),
-          semester: data.semester?.trim(), // Changed from data.sem to data.semester
-          subjectCode: data.subjectCode?.trim(),
-          subjectName: data.subjectName?.trim()
-        };
-        results.push(cleanedData);
-      })
-      .on('end', async () => {
-        try {
-          // Insert all subjects
-          const insertPromises = results.map(async (subject) => {
-            try {
-              // Validate data before creating
-              if (!subject.semester) {
-                console.warn(`Missing semester for subject ${subject.subjectCode}`);
-                return null;
-              }
-              return await Subject.create(subject);
-            } catch (err) {
-              console.warn(`Error inserting subject ${subject.subjectCode}:`, err.message);
-              return null;
-            }
-          });
+    const parseCSV = new Promise((resolve, reject) => {
+      fs.createReadStream(req.file.path)
+        .pipe(csv.parse({ 
+          columns: true, 
+          trim: true,
+          skipEmptyLines: true,
+          columns: ['regulation', 'year', 'branch', 'semester', 'subjectCode', 'subjectName']
+        }))
+        .on('data', (data) => {
+          totalRows++;
+          // Skip if any of the values match the header names
+          if (data.regulation.toLowerCase() === 'regulation' ||
+              data.year.toLowerCase() === 'year' ||
+              data.branch.toLowerCase() === 'branch' ||
+              data.semester.toLowerCase() === 'semester' ||
+              data.subjectCode.toLowerCase() === 'subjectcode' ||
+              data.subjectName.toLowerCase() === 'subjectname') {
+            return;
+          }
 
-          const inserted = await Promise.all(insertPromises);
-          addedCount = inserted.filter(Boolean).length;
+          // Validate each row before adding to results
+          if (data.regulation && data.year && data.branch && 
+              data.semester && data.subjectCode && data.subjectName) {
+            const cleanedData = {
+              regulation: data.regulation.trim(),
+              year: data.year.trim(),
+              branch: data.branch.trim(),
+              semester: data.semester.trim(),
+              subjectCode: data.subjectCode.trim(),
+              subjectName: data.subjectName.trim()
+            };
+            results.push(cleanedData);
+          }
+        })
+        .on('error', (error) => reject(error))
+        .on('end', () => resolve());
+    });
 
-          // Clean up - delete uploaded file
-          fs.unlink(req.file.path, (err) => {
-            if (err) console.error('Error deleting file:', err);
-          });
+    await parseCSV;
 
-          res.json({ 
-            message: 'CSV processed successfully', 
-            addedCount,
-            totalRecords: results.length,
-            failedRecords: results.length - addedCount
-          });
-        } catch (error) {
-          console.error('Error processing CSV data:', error);
-          res.status(500).json({ 
-            message: 'Error processing CSV data', 
-            error: error.message 
-          });
-        }
-      });
+    if (results.length === 0) {
+      throw new Error('No valid data found in CSV file');
+    }
+
+    // Insert all subjects
+    const insertPromises = results.map(async (subject) => {
+      try {
+        return await Subject.create(subject);
+      } catch (err) {
+        console.warn(`Error inserting subject ${subject.subjectCode}:`, err.message);
+        return null;
+      }
+    });
+
+    const inserted = await Promise.all(insertPromises);
+    addedCount = inserted.filter(Boolean).length;
+
+    // Clean up - delete uploaded file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Error deleting file:', err);
+    });
+
+    res.json({ 
+      message: 'CSV processed successfully', 
+      addedCount,
+      totalRecords: results.length,
+      // Don't count header row in failed records
+      failedRecords: results.length - addedCount
+    });
+
   } catch (error) {
-    console.error('Error reading CSV:', error);
-    res.status(500).json({ 
-      message: 'Error reading CSV file', 
-      error: error.message 
+    // Clean up - delete uploaded file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Error deleting file:', err);
+    });
+
+    console.error('Error processing CSV:', error);
+    res.status(400).json({ 
+      message: error.message || 'Error processing CSV file'
     });
   }
 });

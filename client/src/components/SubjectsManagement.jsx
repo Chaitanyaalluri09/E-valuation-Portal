@@ -175,7 +175,11 @@ function SubjectsManagement() {
   const handleCsvUpload = async (e) => {
     e.preventDefault();
     if (!csvFile) {
-      alert('Please select a CSV file first');
+      setToast({
+        show: true,
+        message: 'Please select a CSV file first',
+        type: 'error'
+      });
       return;
     }
 
@@ -184,13 +188,20 @@ function SubjectsManagement() {
 
     try {
       setLoading(true);
-      const response = await axiosInstance.post('/api/subjects/upload-csv', formData);
+      const response = await axiosInstance.post('/api/subjects/upload-csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       setToast({ 
         show: true, 
-        message: `Successfully added ${response.data.addedCount} subjects`, 
+        message: `Successfully added ${response.data.addedCount} out of ${response.data.totalRecords} subjects${
+          response.data.failedRecords > 0 ? ` (${response.data.failedRecords} failed)` : ''
+        }`, 
         type: 'success' 
       });
+      
       setCsvFile(null);
       // Reset file input
       e.target.reset();
@@ -199,28 +210,34 @@ function SubjectsManagement() {
       await Promise.all([fetchSubjects(), fetchDistinctValues()]);
     } catch (error) {
       console.error('Error uploading CSV:', error);
-      setError(error.message);
       setToast({ 
         show: true, 
-        message: error.message || 'Error uploading CSV', 
+        message: error.response?.data?.message || 'Error uploading CSV file', 
         type: 'error' 
       });
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setToast(prev => ({ ...prev, show: false }));
-      }, 3000);
     }
   };
 
   const handleCsvFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type !== 'text/csv') {
-      alert('Please upload a CSV file');
-      e.target.value = '';
+    if (!file) {
+      setCsvFile(null);
       return;
     }
+    
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      setToast({
+        show: true,
+        message: 'Please upload a CSV file',
+        type: 'error'
+      });
+      e.target.value = '';
+      setCsvFile(null);
+      return;
+    }
+    
     setCsvFile(file);
   };
 
