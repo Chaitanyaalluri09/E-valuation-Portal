@@ -80,34 +80,41 @@ function Reports() {
   };
 
   const downloadReport = (evaluation) => {
-    // Create CSV data with header
-    let csv = 'Register Number,Student Name,Total Marks,Status,Question-wise Marks\n';
+    // Create CSV header
+    let csv = 'Register Number,';
     
-    // Process each submission
+    // Get all unique question numbers
+    const allQuestions = new Set();
     evaluation.studentSubmissions.forEach(submission => {
-      // Get question-wise marks as a string
-      const questionMarks = submission.questionMarks
-        ? submission.questionMarks.map(q => `Q${q.questionNumber}:${q.marks}`).join('; ')
-        : 'Not evaluated';
-
-      // Add row for each submission
-      csv += `${submission.registerNumber},${submission.studentName || 'N/A'},`;
-      csv += `${submission.totalMarks || 0},${submission.status},${questionMarks}\n`;
+      submission.questionMarks.forEach(mark => {
+        allQuestions.add(mark.questionNumber);
+      });
     });
+    const sortedQuestions = Array.from(allQuestions).sort();
+    
+    // Add question numbers to header
+    sortedQuestions.forEach(q => {
+      csv += `Q${q},`;
+    });
+    csv += 'Total Marks\n';
 
-    // Add summary section
-    csv += '\nSummary\n';
-    csv += `Subject,${evaluation.subject}\n`;
-    csv += `Subject Code,${evaluation.subjectCode}\n`;
-    csv += `Branch,${evaluation.branch}\n`;
-    csv += `Year,${evaluation.year}\n`;
-    csv += `Semester,${evaluation.semester}\n`;
-    csv += `Total Papers,${evaluation.studentSubmissions.length}\n`;
-    csv += `Completed,${evaluation.studentSubmissions.filter(sub => sub.status === 'Completed').length}\n`;
-    csv += `In Progress,${evaluation.studentSubmissions.filter(sub => sub.status === 'In Progress').length}\n`;
-    csv += `Not Started,${evaluation.studentSubmissions.filter(sub => sub.status === 'Not Started').length}\n`;
-    csv += `Evaluator,${evaluation.evaluator?.username || 'Not Assigned'}\n`;
-    csv += `End Date,${new Date(evaluation.endDate).toLocaleDateString()}\n`;
+    // Add data rows
+    evaluation.studentSubmissions.forEach(submission => {
+      csv += `${submission.registerNumber},`;
+      
+      // Create a map of question numbers to marks
+      const marksMap = {};
+      submission.questionMarks.forEach(mark => {
+        marksMap[mark.questionNumber] = mark.marks;
+      });
+      
+      // Add marks for each question
+      sortedQuestions.forEach(q => {
+        csv += `${marksMap[q] || '0'},`;
+      });
+      
+      csv += `${submission.totalMarks || '0'}\n`;
+    });
 
     // Create and trigger download
     const blob = new Blob([csv], { type: 'text/csv' });
