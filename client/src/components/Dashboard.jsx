@@ -250,7 +250,7 @@ function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getFilteredEvaluations().map((evaluation) => {
             const correctedPapers = evaluation.studentSubmissions.filter(
-              sub => sub.status === 'evaluated' || sub.status === 'reviewed'
+              sub => sub.status === 'Completed'
             ).length;
             const totalPapers = evaluation.studentSubmissions.length;
             const remainingPapers = totalPapers - correctedPapers;
