@@ -14,7 +14,7 @@ function PapersList() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [evaluatorName, setEvaluatorName] = useState('');
   const dropdownRef = useRef(null);
-  const [startingEvaluation, setStartingEvaluation] = useState(false);
+  const [startingEvaluations, setStartingEvaluations] = useState({});
 
   useEffect(() => {
     fetchEvaluation();
@@ -57,15 +57,13 @@ function PapersList() {
 
   const handleStartEvaluation = async (evaluationId, submissionId) => {
     try {
-      setStartingEvaluation(true);
-      // Update to use PUT instead of PATCH
+      setStartingEvaluations(prev => ({ ...prev, [submissionId]: true }));
       const response = await axiosInstance.put(`/api/evaluations/${evaluationId}/submissions/${submissionId}`, {
         status: 'In Progress',
-        questionMarks: [], // Include empty questionMarks array
-        totalMarks: 0 // Include initial totalMarks
+        questionMarks: [],
+        totalMarks: 0
       });
       
-      // Update local evaluation status if returned in response
       if (response.data.evaluationStatus) {
         setEvaluation(prev => ({
           ...prev,
@@ -77,14 +75,13 @@ function PapersList() {
     } catch (error) {
       console.error('Error starting evaluation:', error);
       setError('Failed to start evaluation. Please try again.');
-    } finally {
-      setStartingEvaluation(false);
+      setStartingEvaluations(prev => ({ ...prev, [submissionId]: false }));
     }
   };
 
   const styles = {
     tableContainer: {
-      height: 'calc(100vh - 180px)', // Adjust 180px based on your header height
+      height: 'calc(100vh - 180px)',
       overflowY: 'auto'
     }
   };
@@ -151,14 +148,14 @@ function PapersList() {
                     {submission.status === 'Not Started' ? (
                       <button
                         onClick={() => handleStartEvaluation(evaluation._id, submission._id)}
-                        disabled={startingEvaluation}
+                        disabled={startingEvaluations[submission._id]}
                         className={`${
-                          startingEvaluation 
+                          startingEvaluations[submission._id]
                             ? 'bg-blue-400 cursor-wait' 
                             : 'bg-blue-600 hover:bg-blue-700'
                         } text-white px-4 py-1 rounded transition-colors`}
                       >
-                        {startingEvaluation ? 'Starting...' : 'Start'}
+                        {startingEvaluations[submission._id] ? 'Starting...' : 'Start'}
                       </button>
                     ) : submission.status === 'In Progress' ? (
                       <button
