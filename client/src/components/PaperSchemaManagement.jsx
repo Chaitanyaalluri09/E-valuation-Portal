@@ -6,6 +6,7 @@ function PaperSchemaManagement() {
   const [schemas, setSchemas] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchema, setEditingSchema] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     totalSets: '',
@@ -20,10 +21,13 @@ function PaperSchemaManagement() {
 
   const fetchSchemas = async () => {
     try {
+      setLoading(true);
       const response = await axiosInstance.get('/api/paper-schemas');
       setSchemas(response.data);
     } catch (error) {
       console.error('Error fetching schemas:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -305,8 +309,25 @@ function PaperSchemaManagement() {
         </div>
       )}
 
-      {/* Schema List with Empty State */}
-      {schemas.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((skeleton) => (
+            <div key={skeleton} className="bg-white p-4 rounded-lg shadow animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="h-6 bg-gray-200 rounded w-2/3"></div>
+                <div className="flex gap-2">
+                  <div className="h-5 w-5 bg-gray-200 rounded"></div>
+                  <div className="h-5 w-5 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : schemas.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <p className="text-gray-600 text-lg">No paper schemas found.</p>
           <p className="text-gray-500 mt-2">Click the 'Create New Schema' button to add one.</p>
